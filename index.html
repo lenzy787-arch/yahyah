@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Braille Studio</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Pacifico&family=Bebas+Neue&family=Lobster&family=Press+Start+2P&family=Permanent+Marker&family=Playfair+Display:wght@700&family=Orbitron:wght@700&family=Anton&family=Caveat:wght@700&family=Roboto+Mono:wght@700&family=Inter:wght@400;500;600;700&display=swap">
+<style>
+:root{--bg:#040405;--pn:#09090b;--ct:#101013;--bd:#1b1b21;--tx:#ededf2;--mu:#7b7b8a;--ac:#3b6cff;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:light){:root:not([data-theme="dark"]){--bg:#040405}}
+*,*:before,*:after{box-sizing:inherit}
+html{height:100%;scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;height:100%;background:var(--bg);color:var(--tx);font:14px system-ui,Segoe UI,Arial,sans-serif;display:flex;overflow:hidden;-webkit-user-select:none;user-select:none}
+.rail{width:90px;background:#030304;border-right:1px solid var(--bd);display:flex;flex-direction:column;align-items:center;padding:16px 0;gap:10px;flex:none}
+.rail button{position:relative;width:70px;background:none;border:0;color:var(--mu);padding:12px 0 10px;border-radius:12px;cursor:pointer;font-size:10px;font-weight:500;display:flex;flex-direction:column;align-items:center;gap:5px;transition:.18s}
+.rail button:hover{color:#fff;background:#0e0e12}
+.rail button b{display:block;line-height:0}.rail svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.rail button.on{background:#101015;color:#fff;box-shadow:inset 0 0 0 1px #24242d,0 0 24px #3b6cff26}
+.rail button.on:before{content:"";position:absolute;left:-7px;top:22%;bottom:22%;width:3px;border-radius:3px;background:var(--ac);box-shadow:0 0 10px var(--ac)}
+.logo{width:52px;height:52px;border-radius:14px;background:#000;border:none;display:flex;align-items:center;justify-content:center;margin-bottom:14px;box-shadow:none;filter:none;overflow:hidden;padding:0;text-decoration:none;cursor:pointer;transition:opacity .08s}
+.logo img{width:100%;height:100%;object-fit:cover;object-position:center;border-radius:14px;display:block;image-rendering:crisp-edges;image-rendering:-webkit-optimize-contrast}
+.logo:active{opacity:.92}
+#cr{max-width:420px;text-align:center;background:#09090b;border:1px solid #1f1f27;border-radius:18px;padding:34px 30px;box-shadow:0 24px 70px #000c}
+#cr .crl{width:76px;height:76px;margin:0 auto 18px;border-radius:20px;background:#000;border:1px solid #2a2a33;display:grid;place-items:center}
+#cr .crl img{width:100%;height:100%;object-fit:contain;border-radius:20px;display:block}
+#cr .crl{overflow:hidden}
+#cr h1{font-size:20px;margin:0 0 10px;letter-spacing:-.02em}
+#cr p{color:var(--mu);line-height:1.6;margin:0 0 20px;font-size:14px}
+#cr .btn,#s4 .btn,.mc .btn{text-decoration:none;width:100%;margin-top:10px;flex:none}
+#cr b,.mc b{color:#fff;font-weight:600}
+#modal{position:fixed;inset:0;background:#000b;display:grid;place-items:center;z-index:9}
+.mc{background:#0a0a0d;border:1px solid #23232b;border-radius:16px;padding:28px 24px;width:min(92vw,360px);text-align:center;box-shadow:0 30px 80px #000}
+.mc h2{margin:0 0 8px}.mc p{color:var(--mu);line-height:1.55;margin:0 0 16px}
+.panel{width:290px;background:var(--pn);border-right:1px solid var(--bd);display:flex;flex-direction:column;flex:none}
+.scroll{flex:1;overflow-y:auto;padding:18px 18px 8px}
+.scroll::-webkit-scrollbar{width:6px}.scroll::-webkit-scrollbar-thumb{background:#2a3048;border-radius:3px}
+h2{font-size:16px;margin:0 0 14px}h3{font-size:12px;color:var(--mu);margin:16px 0 6px;font-weight:600}
+label{display:block;font-size:12px;color:var(--mu);margin:12px 0 5px}
+input[type=text],select{width:100%;background:var(--ct);border:1px solid var(--bd);color:var(--tx);padding:10px;border-radius:8px;font-size:14px;-webkit-user-select:text;user-select:text}
+input[type=range]{width:100%;accent-color:var(--ac)}
+.row{display:flex;justify-content:space-between;align-items:center;gap:8px}.row span{color:var(--tx);font-size:12px}
+.chk{display:flex;align-items:center;gap:8px;color:var(--mu);margin:10px 0;font-size:13px}
+.foot{padding:14px 18px;border-top:1px solid var(--bd);display:flex;gap:8px}
+.btn{flex:1;background:var(--ac);color:#fff;border:0;border-radius:8px;padding:11px;font-weight:600;cursor:pointer;font-size:14px}
+.btn.sec{background:var(--ct);color:var(--tx);border:1px solid var(--bd)}.btn:disabled{opacity:.4;cursor:not-allowed}
+main{flex:1;min-width:0;display:flex;align-items:center;justify-content:center;padding:20px;overflow:auto;background:radial-gradient(circle at 50% 30%,#141830,#07080d)}
+#v1{display:block;background:#fff}
+#stage{position:relative;line-height:0;touch-action:none;box-shadow:0 0 0 1px #2a3350,0 10px 40px #0008;margin:auto}
+#tb{position:absolute;border:1px dashed #2f6bff;cursor:move}
+#th{position:absolute;right:-7px;bottom:-7px;width:14px;height:14px;background:#ff9f1c;border:2px solid #fff;border-radius:50%;cursor:nwse-resize}
+.hd{position:absolute;width:12px;height:12px;background:#2f6bff;border:2px solid #fff;border-radius:3px;transform:translate(-50%,-50%)}
+.hd[data-d=n]{left:50%;top:0;cursor:ns-resize}.hd[data-d=s]{left:50%;top:100%;cursor:ns-resize}
+.hd[data-d=e]{left:100%;top:50%;cursor:ew-resize}.hd[data-d=w]{left:0;top:50%;cursor:ew-resize}
+.hd[data-d=ne]{left:100%;top:0;cursor:nesw-resize}.hd[data-d=sw]{left:0;top:100%;cursor:nesw-resize}
+.hd[data-d=nw]{left:0;top:0;cursor:nwse-resize}.hd[data-d=se]{left:100%;top:100%;cursor:nwse-resize}
+#pv,#gp{max-width:100%;height:auto;border-radius:6px}
+.cp{width:64px;height:40px;padding:0;border:1px solid var(--bd);border-radius:8px;background:none;cursor:pointer;flex:none}
+#out{background:#000;color:#fff;margin:0;padding:12px;border-radius:6px;line-height:1;white-space:pre;overflow:auto;max-width:100%;max-height:100%;font-family:"Segoe UI Symbol","DejaVu Sans Mono","Noto Sans Symbols 2","Apple Braille",monospace;letter-spacing:0;transform:translateZ(0);-webkit-font-smoothing:antialiased;font-smooth:never;-webkit-user-select:text;user-select:text}
+.hid{display:none!important}
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#fff;color:#000;padding:8px 16px;border-radius:20px;font-weight:600;opacity:0;transition:.25s;pointer-events:none}
+.toast.on{opacity:1}
+body{font-family:Inter,system-ui,Segoe UI,Arial,sans-serif;font-size:13.5px}
+.panel{box-shadow:inset -1px 0 0 #ffffff05}
+h2{font-size:18px;margin:0 0 4px;letter-spacing:-.02em}
+.sub{margin:0 0 8px;color:var(--mu);font-size:12px;line-height:1.45}
+h3{letter-spacing:.12em;font-size:10.5px;color:#55555f;margin:22px 0 4px}
+label{color:var(--mu);font-size:12px;font-weight:500}
+.scroll{padding:20px 18px 10px}.scroll::-webkit-scrollbar-thumb{background:#1f1f27}
+input[type=text],select{background:#0d0d10;border:1px solid var(--bd);border-radius:10px;padding:10px 12px;transition:.15s;outline:none}
+select{-webkit-appearance:none;appearance:none;padding-right:34px;cursor:pointer;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%237b7b8a' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center}
+input[type=text]:focus,select:focus{border-color:var(--ac);box-shadow:0 0 0 3px #3b6cff26}
+input[type=range]{-webkit-appearance:none;appearance:none;height:4px;background:#1f1f27;border-radius:4px;outline:none;margin:6px 0 4px}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;border-radius:50%;background:#fff;border:3px solid var(--ac);cursor:pointer;box-shadow:0 0 0 4px #3b6cff1f}
+input[type=range]::-moz-range-thumb{width:12px;height:12px;border-radius:50%;background:#fff;border:3px solid var(--ac);cursor:pointer}
+input[type=checkbox]{-webkit-appearance:none;appearance:none;width:34px;height:20px;border-radius:20px;background:#1f1f27;position:relative;cursor:pointer;flex:none;margin:0;transition:.2s}
+input[type=checkbox]:after{content:"";position:absolute;top:3px;left:3px;width:14px;height:14px;border-radius:50%;background:#8a8a99;transition:.2s}
+input[type=checkbox]:checked{background:var(--ac)}input[type=checkbox]:checked:after{left:17px;background:#fff}
+.chk{justify-content:space-between;flex-direction:row-reverse;color:var(--tx);margin:12px 0}
+.cp{border-radius:10px;background:#0d0d10;padding:3px}
+.foot{background:#060608;border-top:1px solid var(--bd);padding:14px 16px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;background:linear-gradient(180deg,#4a78ff,#2f5bef);border-radius:10px;padding:11px 10px;box-shadow:0 6px 20px #3b6cff33,inset 0 1px 0 #ffffff30;transition:.15s;font-family:inherit}
+.btn:hover{filter:brightness(1.12);transform:translateY(-1px)}
+.btn.sec{background:#101013;box-shadow:none;border:1px solid var(--bd)}.btn.sec:hover{background:#17171c}
+.btn svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex:none}
+main{background-image:radial-gradient(#ffffff10 1px,transparent 1px),radial-gradient(circle at 50% 0,#13131c,#040405 70%);background-size:24px 24px,100% 100%}
+#stage{border-radius:4px;box-shadow:0 0 0 1px #2a2a33,0 24px 70px #000c,0 0 80px #3b6cff14}
+#pv,#gp{box-shadow:0 0 0 1px #2a2a33,0 24px 70px #000c,0 0 80px #3b6cff14}
+.hd{background:#fff;border:2px solid var(--ac);box-shadow:0 2px 8px #0008}
+#tb{border:1px dashed #6f93ff}
+.toast{background:#111115;color:#fff;border:1px solid #2a2a33;box-shadow:0 10px 40px #000a;font-size:13px}
+@media(max-width:760px){body{flex-direction:column;overflow:auto;height:auto}.rail{width:100%;flex-direction:row;justify-content:center}.panel{width:100%;max-height:60vh}main{min-height:50vh}}
+</style></head>
+<body oncontextmenu="return false">
+<nav class="rail">
+ <a href="https://t.me/lenzyspeople" target="_blank" rel="noopener" class="logo"><img src="logo.png" alt="Logo"></a>
+ <button id="tCreate" class="on"><b><svg viewBox="0 0 24 24"><path d="M4 7V5h16v2M12 5v14M9 19h6"/></svg></b>Create</button>
+ <button id="tBraille"><b><svg viewBox="0 0 24 24"><g fill="currentColor" stroke="none"><circle cx="8.5" cy="4.5" r="1.7"/><circle cx="15.5" cy="4.5" r="1.7"/><circle cx="8.5" cy="9.8" r="1.7"/><circle cx="15.5" cy="9.8" r="1.7"/><circle cx="8.5" cy="15.1" r="1.7"/><circle cx="15.5" cy="15.1" r="1.7"/><circle cx="8.5" cy="20.4" r="1.7"/><circle cx="15.5" cy="20.4" r="1.7"/></g></svg></b>ASCII</button>
+ <button id="tGrad"><b><svg viewBox="0 0 24 24"><path d="M12 3s6 6.2 6 10.5a6 6 0 01-12 0C6 9.2 12 3 12 3z"/><path d="M12 3v16.5a6 6 0 006-6C18 9.2 12 3 12 3z" fill="currentColor" stroke="none" opacity=".55"/></svg></b>Gradient</button>
+ <button id="tCred"><b><svg viewBox="0 0 24 24"><path d="M20.8 4.6a5.5 5.5 0 00-7.8 0L12 5.7l-1-1.1a5.5 5.5 0 00-7.8 7.8l1 1.1L12 21l7.8-7.5 1-1.1a5.5 5.5 0 000-7.8z"/></svg></b>Credits</button>
+</nav>
+
+<aside class="panel">
+ <div class="scroll">
+  <section id="s1">
+   <h2>Create</h2><p class="sub">Type a name, then drag the image and text to shape it.</p>
+   <label>Name / Text</label>
+   <input type="text" id="name" placeholder="Enter a name…" value="Lenzy">
+   <label>Font</label>
+   <select id="font">
+    <option value="Arial">Basic (Arial)</option><option value="Calibri, Carlito, Arial">Calibri</option>
+    <option>Bebas Neue</option><option>Anton</option><option>Pacifico</option><option>Lobster</option>
+    <option>Permanent Marker</option><option>Playfair Display</option><option>Orbitron</option>
+    <option>Caveat</option><option>Roboto Mono</option><option>Press Start 2P</option>
+    <option value="Times New Roman">Times New Roman</option><option value="Impact">Impact</option>
+   </select>
+   <label><span class="row"><span>Size</span><span id="sizeV">120</span></span></label>
+   <input type="range" id="size" min="10" max="800" value="120">
+   <label><span class="row"><span>Letter spacing</span><span id="lsV">0</span></span></label>
+   <input type="range" id="ls" min="-10" max="60" value="0">
+   <h3>IMAGE</h3>
+   <div class="row"><button class="btn sec" id="fit" type="button">Fit to text</button><button class="btn sec" id="ctr" type="button">Center text</button></div>
+   <label>Image size: <b id="dims" style="color:#fff"></b><br>Drag the blue squares to resize the white image, drag the text to move it, drag the orange dot to make the text bigger or smaller.</label>
+   <div class="chk"><input type="checkbox" id="bold"> Bold</div>
+   <div class="chk"><input type="checkbox" id="ital"> Italic</div>
+  </section>
+
+  <section id="s4" class="hid"><h2>Credits</h2><p class="sub">Made for the community.</p>
+   <a class="btn" href="https://t.me/lenzyspeople" target="_blank" rel="noopener" style="margin-top:16px">Join t.me/lenzyspeople</a>
+   <a class="btn sec" href="https://t.me/lenziii" target="_blank" rel="noopener">t.me/lenziii</a></section>
+  <section id="s3" class="hid">
+   <h2>Gradient</h2><p class="sub">Pick a start and end color, then export .tfx.</p>
+   <label>Presets</label>
+   <select id="gpre"><option value="">Custom</option><option value="#5d21ff,#00d4ff">Neon Blue</option><option value="#5d21ff,#ff2fa0">Purple Pink</option><option value="#ff5f6d,#ffc371">Sunset</option><option value="#2193b0,#6dd5ed">Ocean</option><option value="#ff0000,#ffd000">Fire</option><option value="#00b09b,#96c93d">Mint</option><option value="#ffffff,#7aa7ff">Ice</option></select>
+   <label>Start color</label>
+   <div class="row"><input type="color" id="c1" class="cp" value="#5d21ff"><input type="text" id="h1" value="#5d21ff" maxlength="7"></div>
+   <label>End color</label>
+   <div class="row"><input type="color" id="c2" class="cp" value="#00d4ff"><input type="text" id="h2" value="#00d4ff" maxlength="7"></div>
+   <button class="btn sec" id="swap" type="button" style="width:100%;margin-top:12px;flex:none">⇄ Swap colors</button>
+   <label>Direction</label>
+   <select id="gdir"><option value="h">Left → Right</option><option value="v">Top → Bottom</option><option value="d">Diagonal ↘</option><option value="a">Diagonal ↙</option></select>
+   <div class="chk"><input type="checkbox" id="gblank" checked> Color blank cells too</div>
+   <label>Fade</label><div id="gbar" style="height:14px;border-radius:7px"></div>
+  </section>
+  <section id="s2" class="hid">
+   <h2>ASCII Settings</h2><p class="sub">Tune how the image becomes braille.</p>
+   <label><span class="row"><span>Width (characters)</span><span id="wV">70</span></span></label>
+   <input type="range" id="w" min="10" max="250" value="70">
+   <label><span class="row"><span>Threshold</span><span id="thV">128</span></span></label>
+   <input type="range" id="th" min="0" max="255" value="128">
+   <label><span class="row"><span>Brightness</span><span id="brV">0</span></span></label>
+   <input type="range" id="br" min="-100" max="100" value="0">
+   <label><span class="row"><span>Contrast</span><span id="coV">0</span></span></label>
+   <input type="range" id="co" min="-100" max="100" value="0">
+   <label>Dithering</label>
+   <select id="dith"><option value="none">None</option><option value="fs">Floyd–Steinberg</option><option value="atk">Atkinson</option><option value="bayer">Ordered (Bayer)</option></select>
+   <label>Blank dot character</label>
+   <select id="blank"><option value="2800">⠀ Empty braille (U+2800)</option><option value="2801">⠁ Single dot (visible blank)</option><option value="0020">Space</option></select>
+   <h3>OPTIONS</h3>
+   <div class="chk"><input type="checkbox" id="inv" checked> Inverted mode</div>
+   <div class="chk"><input type="checkbox" id="trim"> Trim empty margins</div>
+   <div class="chk"><input type="checkbox" id="flipx"> Flip horizontally</div>
+   <div class="chk"><input type="checkbox" id="flipy"> Flip vertically</div>
+   <div class="chk"><input type="checkbox" id="trail" checked> Trim trailing blanks per line</div>
+   <label>Border</label>
+   <select id="border"><option value="0">None</option><option value="1">Padding 1 char</option><option value="2">Padding 2 chars</option></select>
+   <h3>PREVIEW</h3>
+   <label><span class="row"><span>Preview size</span><span id="fsV">12</span></span></label>
+   <input type="range" id="fs" min="3" max="30" value="12">
+   <label>Preview mode</label>
+   <select id="pmode"><option value="canvas">Smooth dots (recommended)</option><option value="text">Raw text</option></select>
+   <label>Preview colors</label>
+   <select id="theme"><option value="bw">White on black</option><option value="wb">Black on white</option><option value="gr">Green terminal</option><option value="am">Amber</option></select>
+  </section>
+ </div>
+ <div class="foot">
+  <button class="btn sec hid" id="back"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>Back</button>
+  <button class="btn hid" id="copy"><svg viewBox="0 0 24 24"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V6a2 2 0 012-2h9"/></svg>Copy</button>
+  <button class="btn" id="cont">Continue<svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
+  <button class="btn hid" id="dl"><svg viewBox="0 0 24 24"><path d="M12 4v11M7 11l5 5 5-5M5 20h14"/></svg>Download .tfx</button>
+ </div>
+</aside>
+
+<main>
+ <div id="stage"><canvas id="v1" width="640" height="240"></canvas><div id="tb"><i id="th"></i></div><i class="hd" data-d="n"></i><i class="hd" data-d="s"></i><i class="hd" data-d="e"></i><i class="hd" data-d="w"></i><i class="hd" data-d="ne"></i><i class="hd" data-d="nw"></i><i class="hd" data-d="se"></i><i class="hd" data-d="sw"></i></div>
+ <canvas id="pv" class="hid"></canvas>
+ <canvas id="gp" class="hid"></canvas>
+ <div id="cr" class="hid"><div class="crl"><img src="logo.png" alt="Logo" style="width:100%;height:100%;object-fit:contain;border-radius:16px"></div><h1>Made for the community</h1><p>This website has been created for the community from <b>t.me/lenziii</b>. If you enjoy stuff like this, join <b>t.me/lenzyspeople</b>.</p><a class="btn" href="https://t.me/lenzyspeople" target="_blank" rel="noopener">Join the channel</a><a class="btn sec" href="https://t.me/lenziii" target="_blank" rel="noopener">t.me/lenziii</a></div>
+ <pre id="out" class="hid"></pre>
+</main>
+<div id="modal" class="hid"><div class="mc"><h2>Saved</h2><p>Your file is on its way. If you like tools like this, join the community channel for more.</p><a class="btn" href="https://t.me/lenzyspeople" target="_blank" rel="noopener">Join t.me/lenzyspeople</a><button class="btn sec" id="mclose" type="button" style="width:100%;margin-top:10px;flex:none">Close</button></div></div>
+<div class="toast" id="toast">Copied!</div>
+
+<script>
+(function(){
+const $=id=>document.getElementById(id);
+const cv=$('v1'),cx=cv.getContext('2d',{willReadFrequently:true});
+let step=1,text='';const S={W:640,H:240,tx:320,ty:120};let bb={lf:1,rt:1,asc:1,ds:1},vs=1,drag=null;
+/* ---------- Step 1: text image ---------- */
+async function draw(){
+  const sz=+$('size').value,ls=+$('ls').value,f=$('font').value;
+  const fam=f.indexOf(',')>-1||/Arial|Impact|Times/.test(f)?f:'"'+f+'"';
+  const spec=($('ital').checked?'italic ':'')+($('bold').checked?'bold ':'')+sz+'px '+fam;
+  try{await document.fonts.load(spec,$('name').value||'A')}catch(e){}
+  const t=$('name').value||' ';
+  cx.font=spec;try{cx.letterSpacing=ls+'px'}catch(e){}
+  const m=cx.measureText(t);
+  const asc=m.actualBoundingBoxAscent,ds=m.actualBoundingBoxDescent,lf=m.actualBoundingBoxLeft,rt=Math.max(m.actualBoundingBoxRight,1);
+  const W=S.W,H=S.H;cv.width=W;cv.height=H;bb={lf:lf,rt:rt,asc:asc,ds:ds};
+  cx.fillStyle='#fff';cx.fillRect(0,0,W,H);
+  cx.fillStyle='#000';cx.font=spec;cx.textBaseline='alphabetic';cx.textAlign='left';
+  try{cx.letterSpacing=ls+'px'}catch(e){}
+  cx.fillText(t,S.tx-(rt-lf)/2,S.ty-(ds-asc)/2);layout();
+  if(step===2)braille();
+}
+['name','font','size','ls','bold','ital'].forEach(i=>$(i).addEventListener('input',()=>{
+  ['size','ls'].forEach(k=>$(k+'V')&&($(k+'V').textContent=$(k).value));draw();}));
+/* ---------- stage: drag to resize image / move + scale text ---------- */
+function layout(){
+  const mn=document.querySelector('main');
+  if(!drag)vs=Math.max(.05,Math.min(1,(mn.clientWidth-70)/S.W,(mn.clientHeight-70)/S.H));
+  cv.style.width=S.W*vs+'px';cv.style.height=S.H*vs+'px';
+  const tb=$('tb');
+  tb.style.left=(S.tx-(bb.lf+bb.rt)/2)*vs+'px';tb.style.top=(S.ty-(bb.asc+bb.ds)/2)*vs+'px';
+  tb.style.width=(bb.lf+bb.rt)*vs+'px';tb.style.height=(bb.asc+bb.ds)*vs+'px';
+  $('dims').textContent=S.W+' × '+S.H;
+}
+const stage=$('stage');
+stage.addEventListener('pointerdown',e=>{
+  const d=e.target.dataset&&e.target.dataset.d,isTh=e.target.id==='th',isTb=e.target.id==='tb';
+  if(!d&&!isTh&&!isTb)return;
+  e.preventDefault();stage.setPointerCapture(e.pointerId);
+  drag={d:d||'',th:isTh,tb:isTb,x:e.clientX,y:e.clientY,W:S.W,H:S.H,tx:S.tx,ty:S.ty,sz:+$('size').value,bw:Math.max(1,bb.lf+bb.rt)};
+});
+stage.addEventListener('pointermove',e=>{
+  if(!drag)return;
+  const dx=(e.clientX-drag.x)/vs,dy=(e.clientY-drag.y)/vs,cl=v=>Math.round(Math.max(60,Math.min(2400,v)));
+  if(drag.tb){S.tx=drag.tx+dx;S.ty=drag.ty+dy}
+  else if(drag.th){const ns=Math.max(10,Math.min(800,Math.round(drag.sz*(drag.bw+dx*2)/drag.bw)));$('size').value=ns;$('sizeV').textContent=ns}
+  else{const d=drag.d;
+    if(d.indexOf('e')>-1)S.W=cl(drag.W+dx);
+    if(d.indexOf('s')>-1)S.H=cl(drag.H+dy);
+    if(d.indexOf('w')>-1){S.W=cl(drag.W-dx);S.tx=drag.tx+(S.W-drag.W)}
+    if(d.indexOf('n')>-1){S.H=cl(drag.H-dy);S.ty=drag.ty+(S.H-drag.H)}}
+  draw();
+});
+['pointerup','pointercancel'].forEach(ev=>stage.addEventListener(ev,()=>{drag=null;layout()}));
+$('fit').onclick=()=>{S.W=Math.max(60,Math.ceil(bb.lf+bb.rt+32));S.H=Math.max(60,Math.ceil(bb.asc+bb.ds+32));S.tx=S.W/2;S.ty=S.H/2;draw()};
+$('ctr').onclick=()=>{S.tx=S.W/2;S.ty=S.H/2;draw()};
+window.addEventListener('resize',layout);
+/* ---------- Step 2: braille ---------- */
+const bayer=[[0,8,2,10],[12,4,14,6],[3,11,1,9],[15,7,13,5]];
+function braille(){
+  const cw=cv.width,chh=cv.height;
+  const data=cx.getImageData(0,0,cw,chh).data;
+  let g=new Float32Array(cw*chh);
+  const br=+$('br').value,co=+$('co').value,k=(259*(co+255))/(255*(259-co));
+  for(let i=0;i<g.length;i++){
+    let l=.299*data[i*4]+.587*data[i*4+1]+.114*data[i*4+2]+br;
+    g[i]=Math.max(0,Math.min(255,k*(l-128)+128));
+  }
+  let x0=0,y0=0,x1=cw,y1=chh;
+  if($('trim').checked){
+    let mnx=cw,mny=chh,mxx=0,mxy=0;
+    for(let y=0;y<chh;y++)for(let x=0;x<cw;x++)if(g[y*cw+x]<200){if(x<mnx)mnx=x;if(x>mxx)mxx=x;if(y<mny)mny=y;if(y>mxy)mxy=y}
+    if(mxx>=mnx){const p=6;x0=Math.max(0,mnx-p);y0=Math.max(0,mny-p);x1=Math.min(cw,mxx+p);y1=Math.min(chh,mxy+p)}
+  }
+  const sw=x1-x0,sh=y1-y0,chars=+$('w').value,dw=chars*2;
+  let dh=Math.max(4,Math.round(sh*dw/sw/4)*4);
+  // resample (box/bilinear average)
+  const px=new Float32Array(dw*dh);
+  for(let y=0;y<dh;y++)for(let x=0;x<dw;x++){
+    const sx0=x0+x*sw/dw,sx1=x0+(x+1)*sw/dw,sy0=y0+y*sh/dh,sy1=y0+(y+1)*sh/dh;
+    let s=0,n=0;
+    for(let yy=Math.floor(sy0);yy<Math.max(Math.floor(sy0)+1,Math.ceil(sy1));yy++)
+      for(let xx=Math.floor(sx0);xx<Math.max(Math.floor(sx0)+1,Math.ceil(sx1));xx++){
+        if(xx<cw&&yy<chh){s+=g[yy*cw+xx];n++}}
+    px[y*dw+x]=n?s/n:255;
+  }
+  const th=+$('th').value,mode=$('dith').value,on=new Uint8Array(dw*dh);
+  if(mode==='fs'||mode==='atk'){
+    for(let y=0;y<dh;y++)for(let x=0;x<dw;x++){
+      const i=y*dw+x,o=px[i],nv=o>th?255:0,e=o-nv;on[i]=nv?1:0;
+      const sp=(dx,dy,w)=>{const xx=x+dx,yy=y+dy;if(xx>=0&&xx<dw&&yy<dh)px[yy*dw+xx]+=e*w};
+      if(mode==='fs'){sp(1,0,7/16);sp(-1,1,3/16);sp(0,1,5/16);sp(1,1,1/16)}
+      else{[[1,0],[2,0],[-1,1],[0,1],[1,1],[0,2]].forEach(d=>sp(d[0],d[1],1/8))}
+    }
+  }else if(mode==='bayer'){
+    for(let y=0;y<dh;y++)for(let x=0;x<dw;x++){
+      const t=th+(bayer[y%4][x%4]/16-.5)*255;on[y*dw+x]=px[y*dw+x]>t?1:0}
+  }else for(let i=0;i<on.length;i++)on[i]=px[i]>th?1:0;
+  const inv=$('inv').checked,fx=$('flipx').checked,fy=$('flipy').checked;
+  // inverted mode: dots on light pixels; normal: dots on dark pixels
+  const get=(x,y)=>{if(fx)x=dw-1-x;if(fy)y=dh-1-y;const v=on[y*dw+x];return inv?v:1-v};
+  const bm=[[1,2,4,64],[8,16,32,128]],blank=String.fromCharCode(parseInt($('blank').value,16));
+  const pad=+$('border').value,lines=[],grid=[];
+  for(let cy=0;cy<dh;cy+=4){
+    let ln='';const rw=[];
+    for(let cxx=0;cxx<dw;cxx+=2){
+      let b=0;
+      for(let dx=0;dx<2;dx++)for(let dy=0;dy<4;dy++)if(cxx+dx<dw&&cy+dy<dh&&get(cxx+dx,cy+dy))b|=bm[dx][dy];
+      rw.push(b);ln+=b?String.fromCharCode(0x2800+b):blank;
+    }
+    if($('trail').checked){const re=new RegExp('['+blank+'\\u2800\\s]+$');ln=ln.replace(re,'')}
+    lines.push(ln);grid.push(rw);
+  }
+  if(pad){const e=blank.repeat(chars+pad*2),p=blank.repeat(pad);
+    for(let i=0;i<lines.length;i++)lines[i]=p+lines[i]+p;
+    for(let i=0;i<pad;i++){lines.unshift(e);lines.push(e)}}
+  text=lines.join('\n');
+  const o=$('out');o.textContent=text;o.style.fontSize=$('fs').value+'px';
+  const th2={bw:['#000','#fff'],wb:['#fff','#000'],gr:['#020a02','#35ff5a'],am:['#0b0700','#ffb000']}[$('theme').value];
+  o.style.background=th2[0];o.style.color=th2[1];
+  const pc=$('pv'),pg=pc.getContext('2d'),P=Math.max(2,Math.round(+$('fs').value/3));
+  const gp=grid.map(r=>r.slice()),cols=chars+pad*2;
+  if(pad){for(let i=0;i<gp.length;i++)gp[i]=[...new Array(pad).fill(0),...gp[i],...new Array(pad).fill(0)];
+    for(let i=0;i<pad;i++){gp.unshift(new Array(cols).fill(0));gp.push(new Array(cols).fill(0))}}
+  const mg=P*3;
+  pc.width=cols*2*P+mg*2;pc.height=gp.length*4*P+mg*2;
+  pg.fillStyle=th2[0];pg.fillRect(0,0,pc.width,pc.height);pg.fillStyle=th2[1];
+  const bx=[[0,0,1],[0,1,2],[0,2,4],[1,0,8],[1,1,16],[1,2,32],[0,3,64],[1,3,128]];
+  gp.forEach((r,ry)=>r.forEach((b,cn)=>{if(b)bx.forEach(d=>{if(b&d[2]){pg.beginPath();pg.arc(mg+(cn*2+d[0]+.5)*P,mg+(ry*4+d[1]+.5)*P,P*.4,0,6.3);pg.fill()}})}));
+  const tx=$('pmode').value==='text';o.classList.toggle('hid',!tx);pc.classList.toggle('hid',tx);
+}
+['w','th','br','co','dith','blank','inv','trim','flipx','flipy','trail','border','fs','theme','pmode'].forEach(i=>$(i).addEventListener('input',()=>{
+  ['w','th','br','co','fs'].forEach(k=>$(k+'V').textContent=$(k).value);braille();}));
+/* ---------- Step 3: gradient / .tfx (24-bit ANSI truecolor) ---------- */
+const h2r=h=>{h=h.replace('#','');if(h.length===3)h=h.split('').map(c=>c+c).join('');const n=parseInt(h,16);return[(n>>16)&255,(n>>8)&255,n&255]};
+const okHex=v=>/^#?([0-9a-f]{3}|[0-9a-f]{6})$/i.test(v);
+const fixHex=v=>{let s=v[0]==='#'?v:'#'+v;if(s.length===4)s='#'+s.slice(1).split('').map(c=>c+c).join('');return s.toLowerCase()};
+function gcol(x,y,mx,my){
+  const a=h2r($('c1').value),b=h2r($('c2').value),d=$('gdir').value;
+  const xs=x/Math.max(1,mx-1),ys=y/Math.max(1,my-1);
+  const t=d==='h'?xs:d==='v'?ys:d==='d'?(xs+ys)/2:((1-xs)+ys)/2;
+  return [0,1,2].map(i=>Math.round(a[i]+(b[i]-a[i])*t));
+}
+function tfx(){
+  const L=text.split('\n'),mx=Math.max.apply(null,L.map(l=>[...l].length)),my=L.length,all=$('gblank').checked,E=String.fromCharCode(27);
+  return L.map((l,y)=>[...l].map((ch,x)=>{
+    if((ch===' '||ch==='\u2800')&&!all)return ch;
+    const c=gcol(x,y,mx,my);return E+'[38;2;'+c[0]+';'+c[1]+';'+c[2]+'m'+ch+E+'[0m';
+  }).join('')).join('\n')+'\n';
+}
+function grad(){
+  if(step!==3)return;
+  $('gbar').style.background='linear-gradient(90deg,'+$('c1').value+','+$('c2').value+')';
+  const L=text.split('\n').map(l=>[...l]),mx=Math.max(1,Math.max.apply(null,L.map(l=>l.length))),my=L.length;
+  const mn=document.querySelector('main'),P=Math.max(1.5,Math.min(6,(mn.clientWidth-80)/(mx*2))),mg=P*3;
+  const pc=$('gp'),pg=pc.getContext('2d');
+  pc.width=Math.ceil(mx*2*P+mg*2);pc.height=Math.ceil(my*4*P+mg*2);
+  pg.fillStyle='#000';pg.fillRect(0,0,pc.width,pc.height);
+  const bx=[[0,0,1],[0,1,2],[0,2,4],[1,0,8],[1,1,16],[1,2,32],[0,3,64],[1,3,128]];
+  L.forEach((l,y)=>l.forEach((ch,x)=>{
+    const code=ch.charCodeAt(0)-0x2800;if(code<1||code>255)return;
+    pg.fillStyle='rgb('+gcol(x,y,mx,my).join(',')+')';
+    bx.forEach(d=>{if(code&d[2]){pg.beginPath();pg.arc(mg+(x*2+d[0]+.5)*P,mg+(y*4+d[1]+.5)*P,P*.4,0,6.3);pg.fill()}});
+  }));
+}
+[1,2].forEach(i=>{
+  $('c'+i).addEventListener('input',()=>{$('h'+i).value=$('c'+i).value;$('gpre').value='';grad()});
+  $('h'+i).addEventListener('input',()=>{const v=$('h'+i).value;if(okHex(v)){$('c'+i).value=fixHex(v);$('gpre').value='';grad()}});
+});
+$('gpre').onchange=()=>{const v=$('gpre').value;if(!v)return;const p=v.split(',');
+  [1,2].forEach(i=>{$('c'+i).value=p[i-1];$('h'+i).value=p[i-1]});grad()};
+$('swap').onclick=()=>{const a=$('c1').value,b=$('c2').value;$('c1').value=$('h1').value=b;$('c2').value=$('h2').value=a;$('gpre').value='';grad()};
+['gdir','gblank'].forEach(i=>$(i).addEventListener('input',grad));
+function showThanks(){$('modal').classList.remove('hid');try{window.open('https://t.me/lenzyspeople','_blank','noopener')}catch(e){}}
+$('mclose').onclick=()=>$('modal').classList.add('hid');
+$('dl').onclick=async()=>{
+  const data=tfx(),nm=($('name').value||'art').trim().replace(/[^\w\-]+/g,'_')||'art';
+  let dls=null;try{dls=window.claude&&await window.claude.use('downloads')}catch(e){}
+  if(!dls){try{await navigator.clipboard.writeText(data);toast('Download unavailable here – ANSI copied instead')}catch(e){toast('Download unavailable')}return}
+  try{await dls.save({filename:nm+'.tfx',data:data});toast('Saved!');showThanks()}
+  catch(e){
+    if(e&&e.code==='rejected_extension'){try{await dls.save({filename:nm+'.txt',data:data});toast('Saved as .txt – rename to .tfx');showThanks()}catch(x){}}
+    else if(!e||e.code!=='declined')toast('Download failed');
+  }
+};
+/* ---------- navigation ---------- */
+function go(n){
+  step=n;
+  $('s1').classList.toggle('hid',n!==1);$('s2').classList.toggle('hid',n!==2);$('s3').classList.toggle('hid',n!==3);$('s4').classList.toggle('hid',n!==4);
+  $('stage').classList.toggle('hid',n!==1);$('gp').classList.toggle('hid',n!==3);$('cr').classList.toggle('hid',n!==4);if(n!==2){$('out').classList.add('hid');$('pv').classList.add('hid')}
+  $('cont').classList.toggle('hid',n>=3);$('back').classList.toggle('hid',n===1);$('copy').classList.toggle('hid',n!==2);$('dl').classList.toggle('hid',n!==3);
+  $('tCreate').classList.toggle('on',n===1);$('tBraille').classList.toggle('on',n===2);$('tGrad').classList.toggle('on',n===3);$('tCred').classList.toggle('on',n===4);
+  if(n===1)layout();if(n===2||n===3)braille();if(n===3){$('out').classList.add('hid');$('pv').classList.add('hid');grad()}
+}
+$('cont').onclick=()=>go(step+1);$('back').onclick=()=>go(step-1);
+$('tCreate').onclick=()=>go(1);$('tBraille').onclick=()=>go(2);$('tGrad').onclick=()=>go(3);$('tCred').onclick=()=>go(4);
+function toast(m){const t=$('toast');t.textContent=m;t.classList.add('on');setTimeout(()=>t.classList.remove('on'),1400)}
+$('copy').onclick=async()=>{
+  try{await navigator.clipboard.writeText(text)}catch(e){
+    const ta=document.createElement('textarea');ta.value=text;document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove()}
+  toast('Copied!')};
+/* ---------- source-code deterrents (cannot fully prevent viewing) ---------- */
+document.addEventListener('contextmenu',function(e){e.preventDefault();return false},true);
+document.addEventListener('keydown',function(e){
+  var k=(e.key||'').toLowerCase();
+  if(e.key==='F12'||e.keyCode===123||(e.ctrlKey||e.metaKey)&&(k==='u'||k==='s'||k==='p'||k==='i'||k==='j')||(e.ctrlKey||e.metaKey)&&e.shiftKey&&(k==='i'||k==='j'||k==='c'||k==='k')){
+    e.preventDefault();e.stopPropagation();return false;
+  }
+},true);
+document.addEventListener('selectstart',function(e){if(!e.target.closest('input,textarea,#out'))e.preventDefault()},true);
+document.addEventListener('dragstart',function(e){e.preventDefault()},true);
+draw();
+document.fonts.ready.then(draw);
+})();
+</script>
+</body></html>
