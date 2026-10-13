@@ -365,12 +365,26 @@ function showThanks(){$('modal').classList.remove('hid');try{window.open('https:
 $('mclose').onclick=()=>$('modal').classList.add('hid');
 $('dl').onclick=async()=>{
   const data=tfx(),nm=($('name').value||'art').trim().replace(/[^\w\-]+/g,'_')||'art';
-  let dls=null;try{dls=window.claude&&await window.claude.use('downloads')}catch(e){}
-  if(!dls){try{await navigator.clipboard.writeText(data);toast('Download unavailable here – ANSI copied instead')}catch(e){toast('Download unavailable')}return}
-  try{await dls.save({filename:nm+'.tfx',data:data});toast('Saved!');showThanks()}
-  catch(e){
-    if(e&&e.code==='rejected_extension'){try{await dls.save({filename:nm+'.txt',data:data});toast('Saved as .txt – rename to .tfx');showThanks()}catch(x){}}
-    else if(!e||e.code!=='declined')toast('Download failed');
+  try{
+    const blob=new Blob([data],{type:'text/plain;charset=utf-8'});
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement('a');
+    a.href=url;a.download=nm+'.tfx';
+    document.body.appendChild(a);a.click();a.remove();
+    setTimeout(()=>URL.revokeObjectURL(url),1000);
+    toast('Saved!');showThanks();
+  }catch(e){
+    try{
+      await navigator.clipboard.writeText(data);
+      toast('Downloaded failed – ANSI copied to clipboard');
+    }catch(x){
+      // fallback textarea copy
+      const ta=document.createElement('textarea');
+      ta.value=data;ta.style.position='fixed';ta.style.left='-9999px';
+      document.body.appendChild(ta);ta.select();
+      document.execCommand('copy');ta.remove();
+      toast('ANSI copied to clipboard');
+    }
   }
 };
 /* ---------- navigation ---------- */
