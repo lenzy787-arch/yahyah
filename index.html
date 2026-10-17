@@ -100,7 +100,7 @@ main{background-image:radial-gradient(#ffffff10 1px,transparent 1px),radial-grad
 <aside class="panel">
  <div class="scroll">
   <section id="s1">
-   <h2>Create</h2><p class="sub">Type a name, then drag the image and text to shape it.</p>
+   <h2>Create</h2><p class="sub">Type a name or upload an image, then drag to shape it.</p>
    <label>Name / Text</label>
    <input type="text" id="name" placeholder="Enter a name…" value="Lenzy">
    <label>Font</label>
@@ -116,8 +116,13 @@ main{background-image:radial-gradient(#ffffff10 1px,transparent 1px),radial-grad
    <label><span class="row"><span>Letter spacing</span><span id="lsV">0</span></span></label>
    <input type="range" id="ls" min="-10" max="60" value="0">
    <h3>IMAGE</h3>
+   <label>Or upload an image</label>
+   <input type="file" id="imgUpload" accept="image/*" style="display:none">
+   <button class="btn sec" id="imgBtn" type="button" style="width:100%;margin-bottom:6px">Choose image</button>
+   <div id="imgName" style="font-size:11px;color:var(--mu);margin-bottom:8px;word-break:break-all"></div>
+   <button class="btn sec" id="clearImg" type="button" style="width:100%;margin-bottom:10px;display:none">Clear image</button>
    <div class="row"><button class="btn sec" id="fit" type="button">Fit to text</button><button class="btn sec" id="ctr" type="button">Center text</button></div>
-   <label>Image size: <b id="dims" style="color:#fff"></b><br>Drag the blue squares to resize the white image, drag the text to move it, drag the orange dot to make the text bigger or smaller.</label>
+   <label>Image size: <b id="dims" style="color:#fff"></b><br>Drag the blue squares to resize the white image, drag the text to move it, drag the orange dot to make the text bigger or smaller. Uploaded image fills the canvas.</label>
    <div class="chk"><input type="checkbox" id="bold"> Bold</div>
    <div class="chk"><input type="checkbox" id="ital"> Italic</div>
   </section>
@@ -192,26 +197,59 @@ main{background-image:radial-gradient(#ffffff10 1px,transparent 1px),radial-grad
 (function(){
 const $=id=>document.getElementById(id);
 const cv=$('v1'),cx=cv.getContext('2d',{willReadFrequently:true});
-let step=1,text='';const S={W:640,H:240,tx:320,ty:120};let bb={lf:1,rt:1,asc:1,ds:1},vs=1,drag=null;
+let step=1,text='';const S={W:640,H:240,tx:320,ty:120};let bb={lf:1,rt:1,asc:1,ds:1},vs=1,drag=null;let uploadedImg=null;
 /* ---------- Step 1: text image ---------- */
 async function draw(){
-  const sz=+$('size').value,ls=+$('ls').value,f=$('font').value;
-  const fam=f.indexOf(',')>-1||/Arial|Impact|Times/.test(f)?f:'"'+f+'"';
-  const spec=($('ital').checked?'italic ':'')+($('bold').checked?'bold ':'')+sz+'px '+fam;
-  try{await document.fonts.load(spec,$('name').value||'A')}catch(e){}
-  const t=$('name').value||' ';
-  cx.font=spec;try{cx.letterSpacing=ls+'px'}catch(e){}
-  const m=cx.measureText(t);
-  const asc=m.actualBoundingBoxAscent,ds=m.actualBoundingBoxDescent,lf=m.actualBoundingBoxLeft,rt=Math.max(m.actualBoundingBoxRight,1);
-  const W=S.W,H=S.H;cv.width=W;cv.height=H;bb={lf:lf,rt:rt,asc:asc,ds:ds};
+  const W=S.W,H=S.H;cv.width=W;cv.height=H;
   cx.fillStyle='#fff';cx.fillRect(0,0,W,H);
-  cx.fillStyle='#000';cx.font=spec;cx.textBaseline='alphabetic';cx.textAlign='left';
-  try{cx.letterSpacing=ls+'px'}catch(e){}
-  cx.fillText(t,S.tx-(rt-lf)/2,S.ty-(ds-asc)/2);layout();
+  if(uploadedImg){
+    // Draw uploaded image scaled to fit canvas
+    const scale=Math.min(W/uploadedImg.width,H/uploadedImg.height);
+    const iw=uploadedImg.width*scale,ih=uploadedImg.height*scale;
+    const ix=(W-iw)/2,iy=(H-ih)/2;
+    cx.drawImage(uploadedImg,ix,iy,iw,ih);
+    bb={lf:0,rt:W,asc:0,ds:H};
+    $('tb').style.display='none';
+  }else{
+    const sz=+$('size').value,ls=+$('ls').value,f=$('font').value;
+    const fam=f.indexOf(',')>-1||/Arial|Impact|Times/.test(f)?f:'"'+f+'"';
+    const spec=($('ital').checked?'italic ':'')+($('bold').checked?'bold ':'')+sz+'px '+fam;
+    try{await document.fonts.load(spec,$('name').value||'A')}catch(e){}
+    const t=$('name').value||' ';
+    cx.font=spec;try{cx.letterSpacing=ls+'px'}catch(e){}
+    const m=cx.measureText(t);
+    const asc=m.actualBoundingBoxAscent,ds=m.actualBoundingBoxDescent,lf=m.actualBoundingBoxLeft,rt=Math.max(m.actualBoundingBoxRight,1);
+    bb={lf:lf,rt:rt,asc:asc,ds:ds};
+    cx.fillStyle='#000';cx.font=spec;cx.textBaseline='alphabetic';cx.textAlign='left';
+    try{cx.letterSpacing=ls+'px'}catch(e){}
+    cx.fillText(t,S.tx-(rt-lf)/2,S.ty-(ds-asc)/2);
+    $('tb').style.display='';
+  }
+  layout();
   if(step===2)braille();
 }
 ['name','font','size','ls','bold','ital'].forEach(i=>$(i).addEventListener('input',()=>{
   ['size','ls'].forEach(k=>$(k+'V')&&($(k+'V').textContent=$(k).value));draw();}));
+$('imgBtn').onclick=()=>$('imgUpload').click();
+$('imgUpload').addEventListener('change',e=>{
+  const file=e.target.files[0];
+  if(!file)return;
+  const img=new Image();
+  img.onload=()=>{
+    uploadedImg=img;
+    $('imgName').textContent=file.name;
+    $('clearImg').style.display='';
+    draw();
+  };
+  img.src=URL.createObjectURL(file);
+});
+$('clearImg').onclick=()=>{
+  uploadedImg=null;
+  $('imgUpload').value='';
+  $('imgName').textContent='';
+  $('clearImg').style.display='none';
+  draw();
+};
 /* ---------- stage: drag to resize image / move + scale text ---------- */
 function layout(){
   const mn=document.querySelector('main');
