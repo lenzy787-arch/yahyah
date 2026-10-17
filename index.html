@@ -143,6 +143,23 @@ main{background-image:radial-gradient(#ffffff10 1px,transparent 1px),radial-grad
    <select id="gdir"><option value="h">Left → Right</option><option value="v">Top → Bottom</option><option value="d">Diagonal ↘</option><option value="a">Diagonal ↙</option></select>
    <div class="chk"><input type="checkbox" id="gblank" checked> Color blank cells too</div>
    <label>Fade</label><div id="gbar" style="height:14px;border-radius:7px"></div>
+   <button class="btn sec" id="editBtn" type="button" style="width:100%;margin-top:14px">✎ Edit freely</button>
+   <div id="editPanel" class="hid" style="margin-top:10px;padding:12px;background:#0d0d10;border-radius:10px;border:1px solid var(--bd)">
+    <div class="chk"><input type="checkbox" id="editGrad" checked> Gradient new text</div>
+    <label>Fixed color for new text</label>
+    <div class="row"><input type="color" id="editCol" class="cp" value="#ffffff"><input type="text" id="editHex" value="#ffffff" maxlength="7"></div>
+    <label style="margin-top:10px">Border preset</label>
+    <select id="borderPre">
+     <option value="">None</option>
+     <option value="double">Double box ╔═╗</option>
+     <option value="single">Single box ┌─┐</option>
+     <option value="heavy">Heavy box ┏━┓</option>
+     <option value="rounded">Rounded box ╭─╮</option>
+    </select>
+    <button class="btn sec" id="applyBorder" type="button" style="width:100%;margin-top:6px">Apply border</button>
+    <button class="btn sec" id="clearEdits" type="button" style="width:100%;margin-top:8px">Reset to original</button>
+    <p style="font-size:11px;color:var(--mu);margin:8px 0 0">Click anywhere to place cursor. Type, space, backspace, delete, arrows, paste. Border updates with color changes.</p>
+   </div>
   </section>
   <section id="s2" class="hid">
    <h2>ASCII Settings</h2><p class="sub">Tune how the image becomes braille.</p>
@@ -197,7 +214,7 @@ main{background-image:radial-gradient(#ffffff10 1px,transparent 1px),radial-grad
 (function(){
 const $=id=>document.getElementById(id);
 const cv=$('v1'),cx=cv.getContext('2d',{willReadFrequently:true});
-let step=1,text='';const S={W:640,H:240,tx:320,ty:120};let bb={lf:1,rt:1,asc:1,ds:1},vs=1,drag=null;let uploadedImg=null;
+let step=1,text='';const S={W:640,H:240,tx:320,ty:120};let bb={lf:1,rt:1,asc:1,ds:1},vs=1,drag=null;let uploadedImg=null;let editMode=false;let grid=[];let cursor={x:0,y:0};let baseGrid=[];
 /* ---------- Step 1: text image ---------- */
 async function draw(){
   const W=S.W,H=S.H;cv.width=W;cv.height=H;
@@ -369,27 +386,79 @@ function gcol(x,y,mx,my){
   const t=d==='h'?xs:d==='v'?ys:d==='d'?(xs+ys)/2:((1-xs)+ys)/2;
   return [0,1,2].map(i=>Math.round(a[i]+(b[i]-a[i])*t));
 }
+function buildBaseGrid(){
+  const L=text.split('\n').map(l=>[...l]);
+  const w=Math.max(1,...L.map(l=>l.length)),h=L.length;
+  baseGrid=Array.from({length:h},(_,y)=>Array.from({length:w},(_,x)=>L[y][x]||' '));
+  if(!grid.length)grid=baseGrid.map(r=>r.slice());
+}
+function ensureGrid(x,y){
+  while(y<0){grid.unshift(Array(Math.max(1,...grid.map(r=>r.length||1))).fill(' '));y++;cursor.y++;}
+  while(x<0){for(let r of grid)r.unshift(' ');x++;cursor.x++;}
+  while(grid.length<=y)grid.push([]);
+  const w=Math.max(x+1,...grid.map(r=>r.length||0));
+  for(let r of grid)while(r.length<w)r.push(' ');
+}
+function insertRowTop(){
+  const w=Math.max(1,...grid.map(r=>r.length||1));
+  grid.unshift(Array(w).fill(' '));
+}
+function insertColLeft(){
+  for(let r of grid)r.unshift(' ');
+}
 function tfx(){
-  const L=text.split('\n'),mx=Math.max.apply(null,L.map(l=>[...l].length)),my=L.length,all=$('gblank').checked,E=String.fromCharCode(27);
-  return L.map((l,y)=>[...l].map((ch,x)=>{
-    if((ch===' '||ch==='\u2800')&&!all)return ch;
-    const c=gcol(x,y,mx,my);return E+'[38;2;'+c[0]+';'+c[1]+';'+c[2]+'m'+ch+E+'[0m';
-  }).join('')).join('\n')+'\n';
+  buildBaseGrid();
+  const fullH=grid.length,fullW=Math.max(1,...grid.map(r=>r.length));
+  const E=String.fromCharCode(27);
+  let out='';
+  for(let y=0;y<fullH;y++){
+    let line='';
+    for(let x=0;x<fullW;x++){
+      const ch=grid[y]&&grid[y][x]?grid[y][x]:' ';
+      const isEdit=!baseGrid[y]||!baseGrid[y][x]||baseGrid[y][x]!==ch;
+      let c;
+      if(isEdit&&!$('editGrad').checked)c=h2r($('editCol').value);
+      else c=gcol(x,y,fullW,fullH);
+      if((ch===' '||ch==='\u2800')&&!$('gblank').checked&&!isEdit){line+=ch;continue;}
+      line+=E+'[38;2;'+c[0]+';'+c[1]+';'+c[2]+'m'+ch+E+'[0m';
+    }
+    out+=line+'\n';
+  }
+  return out;
 }
 function grad(){
   if(step!==3)return;
   $('gbar').style.background='linear-gradient(90deg,'+$('c1').value+','+$('c2').value+')';
-  const L=text.split('\n').map(l=>[...l]),mx=Math.max(1,Math.max.apply(null,L.map(l=>l.length))),my=L.length;
-  const mn=document.querySelector('main'),P=Math.max(1.5,Math.min(6,(mn.clientWidth-80)/(mx*2))),mg=P*3;
+  buildBaseGrid();
+  const fullH=Math.max(1,grid.length),fullW=Math.max(1,...grid.map(r=>r.length||0));
+  const mn=document.querySelector('main');
+  const P=Math.max(1.1,Math.min(4.8,(mn.clientWidth-120)/(fullW*2)));
+  const mg=P*8;
   const pc=$('gp'),pg=pc.getContext('2d');
-  pc.width=Math.ceil(mx*2*P+mg*2);pc.height=Math.ceil(my*4*P+mg*2);
-  pg.fillStyle='#000';pg.fillRect(0,0,pc.width,pc.height);
-  const bx=[[0,0,1],[0,1,2],[0,2,4],[1,0,8],[1,1,16],[1,2,32],[0,3,64],[1,3,128]];
-  L.forEach((l,y)=>l.forEach((ch,x)=>{
-    const code=ch.charCodeAt(0)-0x2800;if(code<1||code>255)return;
-    pg.fillStyle='rgb('+gcol(x,y,mx,my).join(',')+')';
-    bx.forEach(d=>{if(code&d[2]){pg.beginPath();pg.arc(mg+(x*2+d[0]+.5)*P,mg+(y*4+d[1]+.5)*P,P*.4,0,6.3);pg.fill()}});
-  }));
+  pc.width=Math.ceil(fullW*2*P+mg*2);pc.height=Math.ceil(fullH*4*P+mg*2);
+  pg.fillStyle='#111';pg.fillRect(0,0,pc.width,pc.height);
+  const dots=[[0,0,1],[0,1,2],[0,2,4],[1,0,8],[1,1,16],[1,2,32],[0,3,64],[1,3,128]];
+  for(let y=0;y<fullH;y++)for(let x=0;x<fullW;x++){
+    const ch=grid[y]&&grid[y][x]?grid[y][x]:' ';
+    const code=ch.charCodeAt(0)-0x2800;
+    const isBraille=code>=0&&code<=255&&ch!==' ';
+    if(isBraille){
+      pg.fillStyle='rgb('+gcol(x,y,fullW,fullH).join(',')+')';
+      dots.forEach(d=>{if(code&d[2]){pg.beginPath();pg.arc(mg+(x*2+d[0]+.5)*P,mg+(y*4+d[1]+.5)*P,P*.4,0,6.3);pg.fill()}});
+    }else if(ch!==' '){
+      const c=$('editGrad').checked?gcol(x,y,fullW,fullH):h2r($('editCol').value);
+      pg.fillStyle='rgb('+c.join(',')+')';
+      pg.font='bold '+(P*3.6)+'px system-ui,sans-serif';
+      pg.textAlign='center';pg.textBaseline='middle';
+      pg.fillText(ch,mg+(x*2+1)*P,mg+(y*4+2)*P);
+    }
+  }
+  // Cursor
+  if(editMode){
+    pg.strokeStyle='#fff';pg.lineWidth=1.5;
+    const cx=mg+(cursor.x*2)*P,cy=mg+(cursor.y*4)*P;
+    pg.strokeRect(cx+1,cy+1,P*2-2,P*4-2);
+  }
 }
 [1,2].forEach(i=>{
   $('c'+i).addEventListener('input',()=>{$('h'+i).value=$('c'+i).value;$('gpre').value='';grad()});
@@ -399,6 +468,145 @@ $('gpre').onchange=()=>{const v=$('gpre').value;if(!v)return;const p=v.split(','
   [1,2].forEach(i=>{$('c'+i).value=p[i-1];$('h'+i).value=p[i-1]});grad()};
 $('swap').onclick=()=>{const a=$('c1').value,b=$('c2').value;$('c1').value=$('h1').value=b;$('c2').value=$('h2').value=a;$('gpre').value='';grad()};
 ['gdir','gblank'].forEach(i=>$(i).addEventListener('input',grad));
+$('editBtn').onclick=()=>{
+  editMode=!editMode;
+  $('editPanel').classList.toggle('hid',!editMode);
+  $('editBtn').textContent=editMode?'✎ Editing… (click to type)':'✎ Edit freely';
+  $('gp').style.cursor=editMode?'text':'default';
+  if(editMode)buildBaseGrid();
+  grad();
+};
+$('editCol').addEventListener('input',()=>$('editHex').value=$('editCol').value);
+$('editHex').addEventListener('input',()=>{const v=$('editHex').value;if(okHex(v))$('editCol').value=fixHex(v)});
+$('clearEdits').onclick=()=>{grid=[];baseGrid=[];cursor={x:0,y:0};grad()};
+
+const borders={
+  double:{tl:'╔',tr:'╗',bl:'╚',br:'╝',h:'═',v:'║'},
+  single:{tl:'┌',tr:'┐',bl:'└',br:'┘',h:'─',v:'│'},
+  heavy:{tl:'┏',tr:'┓',bl:'┗',br:'┛',h:'━',v:'┃'},
+  rounded:{tl:'╭',tr:'╮',bl:'╰',br:'╯',h:'─',v:'│'}
+};
+function applyBorderPreset(){
+  const type=$('borderPre').value;
+  if(!type||!borders[type]){toast('Pick a border first');return;}
+  // Force a fresh base
+  const L=text.split('\n').map(l=>[...l]);
+  if(!L.length||!L[0]){toast('No art yet');return;}
+  const w=Math.max(1,...L.map(l=>l.length)),h=L.length;
+  let current=grid.length?grid.map(r=>r.slice()):L.map(r=>r.slice());
+  // Ensure rectangular
+  const cw=Math.max(1,...current.map(r=>r.length||1));
+  current=current.map(r=>{while(r.length<cw)r.push(' ');return r});
+  const b=borders[type];
+  const newGrid=[];
+  newGrid.push([b.tl,...Array(cw).fill(b.h),b.tr]);
+  for(let y=0;y<current.length;y++){
+    newGrid.push([b.v,...current[y],b.v]);
+  }
+  newGrid.push([b.bl,...Array(cw).fill(b.h),b.br]);
+  grid=newGrid;
+  baseGrid=L.map(r=>{while(r.length<w)r.push(' ');return r});
+  cursor={x:1,y:1};
+  if(step!==3)go(3);
+  grad();
+  toast('Border added');
+}
+$('applyBorder').onclick=applyBorderPreset;
+$('borderPre').onchange=()=>{if($('borderPre').value)applyBorderPreset()};
+// Auto-refresh border color when gradient or edit color changes
+['c1','c2','h1','h2','editCol','editHex','editGrad','gdir'].forEach(id=>{
+  const el=$(id);
+  if(el)el.addEventListener('input',()=>{if(step===3)grad()});
+});
+$('gp').addEventListener('click',e=>{
+  if(!editMode||step!==3)return;
+  const rect=$('gp').getBoundingClientRect();
+  buildBaseGrid();
+  const fullH=Math.max(1,grid.length),fullW=Math.max(1,...grid.map(r=>r.length||0));
+  const mn=document.querySelector('main');
+  const P=Math.max(1.1,Math.min(4.8,(mn.clientWidth-120)/(fullW*2)));
+  const mg=P*8;
+  const scaleX=$('gp').width/rect.width,scaleY=$('gp').height/rect.height;
+  const cx=(e.clientX-rect.left)*scaleX,cy=(e.clientY-rect.top)*scaleY;
+  let nx=Math.round((cx-mg)/(2*P)-0.5);
+  let ny=Math.round((cy-mg)/(4*P)-0.5);
+  if(ny<0){for(let i=0;i<-ny;i++)insertRowTop();ny=0;}
+  if(nx<0){for(let i=0;i<-nx;i++)insertColLeft();nx=0;}
+  cursor.x=nx;cursor.y=ny;
+  ensureGrid(cursor.x,cursor.y);
+  grad();
+});
+document.addEventListener('keydown',e=>{
+  if(!editMode||step!==3)return;
+  if(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA'||e.target.tagName==='SELECT')return;
+  const k=e.key;
+  ensureGrid(cursor.x,cursor.y);
+  if(k==='ArrowLeft'){
+    if(cursor.x===0)insertColLeft();
+    else cursor.x--;
+    e.preventDefault();
+  }
+  else if(k==='ArrowRight'){cursor.x++;e.preventDefault()}
+  else if(k==='ArrowUp'){
+    if(cursor.y===0)insertRowTop();
+    else cursor.y--;
+    e.preventDefault();
+  }
+  else if(k==='ArrowDown'){cursor.y++;e.preventDefault()}
+  else if(k==='Backspace'){
+    if(cursor.x>0){cursor.x--;grid[cursor.y][cursor.x]=' ';}
+    e.preventDefault();
+  }
+  else if(k==='Delete'){
+    grid[cursor.y][cursor.x]=' ';
+    e.preventDefault();
+  }
+  else if(k==='Enter'){
+    cursor.y++;cursor.x=0;e.preventDefault();
+  }
+  else if(k.length===1&&!e.ctrlKey&&!e.metaKey){
+    grid[cursor.y][cursor.x]=k;
+    cursor.x++;
+    e.preventDefault();
+  }
+
+  ensureGrid(cursor.x,cursor.y);
+  grad();
+});
+
+
+
+
+
+// Reliable paste without prompts
+let pasteCatcher=document.createElement('textarea');
+pasteCatcher.style.cssText='position:fixed;left:-9999px;top:0;width:1px;height:1px;opacity:0;pointer-events:none';
+document.body.appendChild(pasteCatcher);
+document.addEventListener('keydown',function(e){
+  if(!editMode||step!==3)return;
+  if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='v'){
+    pasteCatcher.value='';
+    pasteCatcher.focus();
+  }
+},true);
+pasteCatcher.addEventListener('paste',function(e){
+  if(!editMode||step!==3)return;
+  e.preventDefault();
+  const t=(e.clipboardData||window.clipboardData).getData('text')||'';
+  if(!t)return;
+  const lines=t.replace(/\r/g,'').split('\n');
+  lines.forEach((ln,i)=>{
+    ensureGrid(cursor.x+[...ln].length,cursor.y+i);
+    [...ln].forEach((ch,j)=>{
+      if(!grid[cursor.y+i])grid[cursor.y+i]=[];
+      grid[cursor.y+i][cursor.x+j]=ch;
+    });
+  });
+  cursor.y+=Math.max(0,lines.length-1);
+  cursor.x+=[...lines[lines.length-1]].length;
+  grad();
+  pasteCatcher.blur();
+});
 function showThanks(){$('modal').classList.remove('hid');try{window.open('https://t.me/lenzyspeople','_blank','noopener')}catch(e){}}
 $('mclose').onclick=()=>$('modal').classList.add('hid');
 $('dl').onclick=async()=>{
