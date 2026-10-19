@@ -88,15 +88,15 @@ main{background-image:radial-gradient(#ffffff10 1px,transparent 1px),radial-grad
 .toast{background:#111115;color:#fff;border:1px solid #2a2a33;box-shadow:0 10px 40px #000a;font-size:13px}
 @media(max-width:760px){body{flex-direction:column;overflow:auto;height:auto}.rail{width:100%;flex-direction:row;justify-content:center}.panel{width:100%;max-height:60vh}main{min-height:50vh}}
 
-#termFrame{background:#1e1e1e;border-radius:10px;overflow:hidden;box-shadow:0 20px 60px #000a,0 0 0 1px #333;max-width:100%}
-.term-bar{background:#2d2d2d;height:28px;display:flex;align-items:center;padding:0 12px;gap:8px;border-bottom:1px solid #111}
-.term-dots{display:flex;gap:6px}
+#termFrame{background:#0c0c0c;border-radius:12px;overflow:hidden;box-shadow:0 25px 70px #000c,0 0 0 1px #2a2a2a;transition:width .2s,height .2s}
+.term-bar{background:#1c1c1e;height:32px;display:flex;align-items:center;padding:0 14px;gap:8px;border-bottom:1px solid #000}
+.term-dots{display:flex;gap:7px}
 .term-dots span{width:12px;height:12px;border-radius:50%;display:block}
 .term-dots span:nth-child(1){background:#ff5f57}
 .term-dots span:nth-child(2){background:#febc2e}
 .term-dots span:nth-child(3){background:#28c840}
-.term-title{flex:1;text-align:center;color:#aaa;font-size:12px;font-family:system-ui;margin-right:40px}
-#termFrame canvas{display:block;margin:0 auto}
+.term-title{flex:1;text-align:center;color:#999;font-size:12px;font-family:-apple-system,system-ui;margin-right:50px}
+#termFrame canvas{display:block;background:#000}
 </style></head>
 <body oncontextmenu="return false">
 <nav class="rail">
@@ -171,7 +171,11 @@ main{background-image:radial-gradient(#ffffff10 1px,transparent 1px),radial-grad
      <option value="single">Single box ┌─┐</option>
      <option value="heavy">Heavy box ┏━┓</option>
      <option value="rounded">Rounded box ╭─╮</option>
+     <option value="copyright">Copyright footer (1 line below)</option>
+     <option value="welcome">Welcome banner</option>
     </select>
+    <label style="margin-top:6px">Name for copyright</label>
+    <input type="text" id="copyName" value="Ethone" placeholder="Your name">
     <button class="btn sec" id="applyBorder" type="button" style="width:100%;margin-top:6px">Apply border</button>
     <button class="btn sec" id="clearEdits" type="button" style="width:100%;margin-top:8px">Reset to original</button>
     <p style="font-size:11px;color:var(--mu);margin:8px 0 0">Click anywhere to place cursor. Type, space, backspace, delete, arrows, paste. Border updates with color changes.</p>
@@ -453,11 +457,17 @@ function grad(){
   $('gbar').style.background='linear-gradient(90deg,'+$('c1').value+','+$('c2').value+')';
   buildBaseGrid();
   const fullH=Math.max(1,grid.length),fullW=Math.max(1,...grid.map(r=>r.length||0));
-  const mn=document.querySelector('main');
-  const P=Math.max(1.1,Math.min(4.8,(mn.clientWidth-120)/(fullW*2)));
-  const mg=P*8;
+  const termC=+$('termCols').value||80,termR=+$('termRows').value||26;
+  // Size the terminal window itself based on chosen cols/rows
+  const charW=8.2,charH=16;
+  const frame=$('termFrame');
+  frame.style.width=Math.min(termC*charW+28,document.querySelector('main').clientWidth-40)+'px';
+  frame.style.height=(termR*charH+40)+'px';
+  const P=Math.max(1,Math.min(5,(frame.clientWidth-20)/(fullW*2.2)));
+  const mg=8;
   const pc=$('gp'),pg=pc.getContext('2d');
   pc.width=Math.ceil(fullW*2*P+mg*2);pc.height=Math.ceil(fullH*4*P+mg*2);
+  pc.style.width='100%';pc.style.height='calc(100% - 32px)';pc.style.objectFit='contain';
   pg.fillStyle='#111';pg.fillRect(0,0,pc.width,pc.height);
   const dots=[[0,0,1],[0,1,2],[0,2,4],[1,0,8],[1,1,16],[1,2,32],[0,3,64],[1,3,128]];
   for(let y=0;y<fullH;y++)for(let x=0;x<fullW;x++){
@@ -492,7 +502,10 @@ $('swap').onclick=()=>{const a=$('c1').value,b=$('c2').value;$('c1').value=$('h1
 ['gdir','gblank'].forEach(i=>$(i).addEventListener('input',grad));
 ['termCols','termRows'].forEach(id=>{
   const el=$(id);
-  if(el)el.addEventListener('input',()=>$(id+'V').textContent=el.value);
+  if(el)el.addEventListener('input',()=>{
+    $(id+'V').textContent=el.value;
+    if(step===3)grad();
+  });
 });
 $('editBtn').onclick=()=>{
   editMode=!editMode;
@@ -512,8 +525,67 @@ const borders={
   heavy:{tl:'┏',tr:'┓',bl:'┗',br:'┛',h:'━',v:'┃'},
   rounded:{tl:'╭',tr:'╮',bl:'╰',br:'╯',h:'─',v:'│'}
 };
+
+function applyCopyrightBox(){
+  const L=text.split('\n').map(l=>[...l]);
+  if(!L.length){toast('No art yet');return;}
+  const w=Math.max(1,...L.map(l=>l.length));
+  let current=grid.length?grid.map(r=>r.slice()):L.map(r=>r.slice());
+  const cw=Math.max(w,...current.map(r=>r.length||1));
+  current=current.map(r=>{while(r.length<cw)r.push(' ');return r});
+  const name=$('copyName').value||'Ethone';
+  const line1='Copyright © 2025 '+name+' All Rights Reserved';
+  const line2='Type "help" to view Commands';
+  const inner=cw;
+  const pad1=Math.max(0,Math.floor((inner-line1.length)/2));
+  const pad2=Math.max(0,Math.floor((inner-line2.length)/2));
+  const box=[];
+  box.push(['╔',...Array(inner).fill('═'),'╗']);
+  box.push(['║',...Array(pad1).fill(' '),...line1.split(''),...Array(Math.max(0,inner-pad1-line1.length)).fill(' '),'║']);
+  box.push(['║',...Array(pad2).fill(' '),...line2.split(''),...Array(Math.max(0,inner-pad2-line2.length)).fill(' '),'║']);
+  box.push(['╚',...Array(inner).fill('═'),'╝']);
+  // Add one blank line then the box
+  const newGrid=current.map(r=>r.slice());
+  newGrid.push(Array(cw).fill(' '));
+  box.forEach(row=>newGrid.push(row));
+  grid=newGrid;
+  cursor={x:1,y:current.length+2};
+  if(step!==3)go(3);
+  grad();
+  toast('Copyright box added');
+}
+
+function applyWelcomeBox(){
+  const L=text.split('\n').map(l=>[...l]);
+  if(!L.length){toast('No art yet');return;}
+  const w=Math.max(1,...L.map(l=>l.length));
+  let current=grid.length?grid.map(r=>r.slice()):L.map(r=>r.slice());
+  const cw=Math.max(w,...current.map(r=>r.length||1));
+  current=current.map(r=>{while(r.length<cw)r.push(' ');return r});
+  const name=$('copyName').value||'Studio';
+  const lines=[
+    'Welcome to '+name,
+    'Type "help" for commands'
+  ];
+  const box=[];
+  box.push(['╔',...Array(cw).fill('═'),'╗']);
+  lines.forEach(ln=>{
+    const pad=Math.max(0,Math.floor((cw-ln.length)/2));
+    box.push(['║',...Array(pad).fill(' '),...ln.split(''),...Array(Math.max(0,cw-pad-ln.length)).fill(' '),'║']);
+  });
+  box.push(['╚',...Array(cw).fill('═'),'╝']);
+  const newGrid=current.map(r=>r.slice());
+  newGrid.push(Array(cw).fill(' '));
+  box.forEach(row=>newGrid.push(row));
+  grid=newGrid;
+  if(step!==3)go(3);
+  grad();
+  toast('Welcome banner added');
+}
 function applyBorderPreset(){
   const type=$('borderPre').value;
+  if(type==='copyright'){applyCopyrightBox();return;}
+  if(type==='welcome'){applyWelcomeBox();return;}
   if(!type||!borders[type]){toast('Pick a border first');return;}
   // Force a fresh base
   const L=text.split('\n').map(l=>[...l]);
