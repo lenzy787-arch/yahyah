@@ -87,6 +87,16 @@ main{background-image:radial-gradient(#ffffff10 1px,transparent 1px),radial-grad
 #tb{border:1px dashed #6f93ff}
 .toast{background:#111115;color:#fff;border:1px solid #2a2a33;box-shadow:0 10px 40px #000a;font-size:13px}
 @media(max-width:760px){body{flex-direction:column;overflow:auto;height:auto}.rail{width:100%;flex-direction:row;justify-content:center}.panel{width:100%;max-height:60vh}main{min-height:50vh}}
+
+#termFrame{background:#1e1e1e;border-radius:10px;overflow:hidden;box-shadow:0 20px 60px #000a,0 0 0 1px #333;max-width:100%}
+.term-bar{background:#2d2d2d;height:28px;display:flex;align-items:center;padding:0 12px;gap:8px;border-bottom:1px solid #111}
+.term-dots{display:flex;gap:6px}
+.term-dots span{width:12px;height:12px;border-radius:50%;display:block}
+.term-dots span:nth-child(1){background:#ff5f57}
+.term-dots span:nth-child(2){background:#febc2e}
+.term-dots span:nth-child(3){background:#28c840}
+.term-title{flex:1;text-align:center;color:#aaa;font-size:12px;font-family:system-ui;margin-right:40px}
+#termFrame canvas{display:block;margin:0 auto}
 </style></head>
 <body oncontextmenu="return false">
 <nav class="rail">
@@ -143,6 +153,12 @@ main{background-image:radial-gradient(#ffffff10 1px,transparent 1px),radial-grad
    <select id="gdir"><option value="h">Left → Right</option><option value="v">Top → Bottom</option><option value="d">Diagonal ↘</option><option value="a">Diagonal ↙</option></select>
    <div class="chk"><input type="checkbox" id="gblank" checked> Color blank cells too</div>
    <label>Fade</label><div id="gbar" style="height:14px;border-radius:7px"></div>
+   <h3 style="margin-top:16px">Reduce terminal size</h3>
+   <p class="sub">This will be how it will actually look at the end.</p>
+   <label><span class="row"><span>Columns</span><span id="termColsV">80</span></span></label>
+   <input type="range" id="termCols" min="40" max="200" value="80">
+   <label><span class="row"><span>Rows</span><span id="termRowsV">26</span></span></label>
+   <input type="range" id="termRows" min="10" max="60" value="26">
    <button class="btn sec" id="editBtn" type="button" style="width:100%;margin-top:14px">✎ Edit freely</button>
    <div id="editPanel" class="hid" style="margin-top:10px;padding:12px;background:#0d0d10;border-radius:10px;border:1px solid var(--bd)">
     <div class="chk"><input type="checkbox" id="editGrad" checked> Gradient new text</div>
@@ -203,7 +219,13 @@ main{background-image:radial-gradient(#ffffff10 1px,transparent 1px),radial-grad
 <main>
  <div id="stage"><canvas id="v1" width="640" height="240"></canvas><div id="tb"><i id="th"></i></div><i class="hd" data-d="n"></i><i class="hd" data-d="s"></i><i class="hd" data-d="e"></i><i class="hd" data-d="w"></i><i class="hd" data-d="ne"></i><i class="hd" data-d="nw"></i><i class="hd" data-d="se"></i><i class="hd" data-d="sw"></i></div>
  <canvas id="pv" class="hid"></canvas>
- <canvas id="gp" class="hid"></canvas>
+ <div id="termFrame" class="hid">
+  <div class="term-bar">
+    <div class="term-dots"><span></span><span></span><span></span></div>
+    <div class="term-title">Terminal — braille</div>
+  </div>
+  <canvas id="gp"></canvas>
+</div>
  <div id="cr" class="hid"><div class="crl"><img src="logo.png" alt="Logo" style="width:100%;height:100%;object-fit:contain;border-radius:16px"></div><h1>Made for the community</h1><p>This website has been created for the community from <b>t.me/lenziii</b>. If you enjoy stuff like this, join <b>t.me/lenzyspeople</b>.</p><a class="btn" href="https://t.me/lenzyspeople" target="_blank" rel="noopener">Join the channel</a><a class="btn sec" href="https://t.me/lenziii" target="_blank" rel="noopener">t.me/lenziii</a></div>
  <pre id="out" class="hid"></pre>
 </main>
@@ -468,6 +490,10 @@ $('gpre').onchange=()=>{const v=$('gpre').value;if(!v)return;const p=v.split(','
   [1,2].forEach(i=>{$('c'+i).value=p[i-1];$('h'+i).value=p[i-1]});grad()};
 $('swap').onclick=()=>{const a=$('c1').value,b=$('c2').value;$('c1').value=$('h1').value=b;$('c2').value=$('h2').value=a;$('gpre').value='';grad()};
 ['gdir','gblank'].forEach(i=>$(i).addEventListener('input',grad));
+['termCols','termRows'].forEach(id=>{
+  const el=$(id);
+  if(el)el.addEventListener('input',()=>$(id+'V').textContent=el.value);
+});
 $('editBtn').onclick=()=>{
   editMode=!editMode;
   $('editPanel').classList.toggle('hid',!editMode);
@@ -610,7 +636,7 @@ pasteCatcher.addEventListener('paste',function(e){
 function showThanks(){$('modal').classList.remove('hid');try{window.open('https://t.me/lenzyspeople','_blank','noopener')}catch(e){}}
 $('mclose').onclick=()=>$('modal').classList.add('hid');
 $('dl').onclick=async()=>{
-  const data=tfx(),nm=($('name').value||'art').trim().replace(/[^\w\-]+/g,'_')||'art';
+  const rows=+$('termRows').value||26,cols=+$('termCols').value||80;const data='\x1b[8;'+rows+';'+cols+'t\n'+tfx(),nm=($('name').value||'art').trim().replace(/[^\w\-]+/g,'_')||'art';
   try{
     const blob=new Blob([data],{type:'text/plain;charset=utf-8'});
     const url=URL.createObjectURL(blob);
@@ -637,7 +663,7 @@ $('dl').onclick=async()=>{
 function go(n){
   step=n;
   $('s1').classList.toggle('hid',n!==1);$('s2').classList.toggle('hid',n!==2);$('s3').classList.toggle('hid',n!==3);$('s4').classList.toggle('hid',n!==4);
-  $('stage').classList.toggle('hid',n!==1);$('gp').classList.toggle('hid',n!==3);$('cr').classList.toggle('hid',n!==4);if(n!==2){$('out').classList.add('hid');$('pv').classList.add('hid')}
+  $('stage').classList.toggle('hid',n!==1);$('termFrame').classList.toggle('hid',n!==3);$('cr').classList.toggle('hid',n!==4);if(n!==2){$('out').classList.add('hid');$('pv').classList.add('hid')}
   $('cont').classList.toggle('hid',n>=3);$('back').classList.toggle('hid',n===1);$('copy').classList.toggle('hid',n!==2);$('dl').classList.toggle('hid',n!==3);
   $('tCreate').classList.toggle('on',n===1);$('tBraille').classList.toggle('on',n===2);$('tGrad').classList.toggle('on',n===3);$('tCred').classList.toggle('on',n===4);
   if(n===1)layout();if(n===2||n===3)braille();if(n===3){$('out').classList.add('hid');$('pv').classList.add('hid');grad()}
