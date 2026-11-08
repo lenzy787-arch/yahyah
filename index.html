@@ -142,6 +142,11 @@ main{background-image:radial-gradient(#ffffff10 1px,transparent 1px),radial-grad
    <a class="btn sec" href="https://t.me/lenziii" target="_blank" rel="noopener">t.me/lenziii</a></section>
   <section id="s3" class="hid">
    <h2>Gradient</h2><p class="sub">Pick a start and end color, then export .tfx.</p>
+   <div class="imgOnly hid"><h3>IMAGE COLORS</h3>
+   <div class="chk"><input type="checkbox" id="origCol2" checked> Keep image's original colors</div>
+   <label><span class="row"><span>Brighten dark colors</span><span id="boostV2">0</span></span></label>
+   <input type="range" id="boost2" min="0" max="100" value="0"><p class="sub hid" id="origNote" style="margin-top:8px">Original colors are on, so the gradient below is ignored. Turn them off to use a gradient.</p></div>
+   
    <label>Presets</label>
    <select id="gpre"><option value="">Custom</option><option value="#5d21ff,#00d4ff">Neon Blue</option><option value="#5d21ff,#ff2fa0">Purple Pink</option><option value="#ff5f6d,#ffc371">Sunset</option><option value="#2193b0,#6dd5ed">Ocean</option><option value="#ff0000,#ffd000">Fire</option><option value="#00b09b,#96c93d">Mint</option><option value="#ffffff,#7aa7ff">Ice</option></select>
    <label>Start color</label>
@@ -195,6 +200,10 @@ main{background-image:radial-gradient(#ffffff10 1px,transparent 1px),radial-grad
    <select id="dith"><option value="none">None</option><option value="fs">Floyd–Steinberg</option><option value="atk">Atkinson</option><option value="bayer">Ordered (Bayer)</option></select>
    <label>Blank dot character</label>
    <select id="blank"><option value="2800">⠀ Empty braille (U+2800)</option><option value="2801">⠁ Single dot (visible blank)</option><option value="0020">Space</option></select>
+   <div class="imgOnly hid"><h3>IMAGE COLORS</h3>
+   <div class="chk"><input type="checkbox" id="origCol" checked> Keep image's original colors</div>
+   <label><span class="row"><span>Brighten dark colors</span><span id="boostV">0</span></span></label>
+   <input type="range" id="boost" min="0" max="100" value="0"></div>
    <h3>OPTIONS</h3>
    <div class="chk"><input type="checkbox" id="inv" checked> Inverted mode</div>
    <div class="chk"><input type="checkbox" id="trim"> Trim empty margins</div>
@@ -240,7 +249,7 @@ main{background-image:radial-gradient(#ffffff10 1px,transparent 1px),radial-grad
 (function(){
 const $=id=>document.getElementById(id);
 const cv=$('v1'),cx=cv.getContext('2d',{willReadFrequently:true});
-let step=1,text='';const S={W:640,H:240,tx:320,ty:120};let bb={lf:1,rt:1,asc:1,ds:1},vs=1,drag=null;let uploadedImg=null;let editMode=false;let grid=[];let cursor={x:0,y:0};let baseGrid=[];
+let step=1,text='';const S={W:640,H:240,tx:320,ty:120};let bb={lf:1,rt:1,asc:1,ds:1},vs=1,drag=null;let uploadedImg=null;let editMode=false;let grid=[];let cursor={x:0,y:0};let baseGrid=[];let colorGrid=[],ox=0,oy=0,lastText=null,uploadedName='';
 /* ---------- Step 1: text image ---------- */
 async function draw(){
   const W=S.W,H=S.H;cv.width=W;cv.height=H;
@@ -279,19 +288,24 @@ $('imgUpload').addEventListener('change',e=>{
   if(!file)return;
   const img=new Image();
   img.onload=()=>{
-    uploadedImg=img;
+    uploadedImg=img;uploadedName=file.name.replace(/\.[^.]+$/,'');
+    // canvas takes the image's own proportions so it fills the canvas (no white bars)
+    const m=Math.min(1,900/Math.max(img.width,img.height));
+    S.W=Math.max(60,Math.round(img.width*m));S.H=Math.max(60,Math.round(img.height*m));S.tx=S.W/2;S.ty=S.H/2;
+    $('origCol').checked=$('origCol2').checked=true;
     $('imgName').textContent=file.name;
     $('clearImg').style.display='';
-    draw();
+    updImgUI();draw();
   };
   img.src=URL.createObjectURL(file);
 });
 $('clearImg').onclick=()=>{
-  uploadedImg=null;
+  uploadedImg=null;uploadedName='';colorGrid=[];
+  S.W=640;S.H=240;S.tx=320;S.ty=120;
   $('imgUpload').value='';
   $('imgName').textContent='';
   $('clearImg').style.display='none';
-  draw();
+  updImgUI();draw();
 };
 /* ---------- stage: drag to resize image / move + scale text ---------- */
 function layout(){
@@ -347,13 +361,15 @@ function braille(){
   let dh=Math.max(4,Math.round(sh*dw/sw/4)*4);
   // resample (box/bilinear average)
   const px=new Float32Array(dw*dh);
+  const hasC=!!uploadedImg,cR=new Float32Array(hasC?dw*dh:0),cG=new Float32Array(hasC?dw*dh:0),cB=new Float32Array(hasC?dw*dh:0);
   for(let y=0;y<dh;y++)for(let x=0;x<dw;x++){
     const sx0=x0+x*sw/dw,sx1=x0+(x+1)*sw/dw,sy0=y0+y*sh/dh,sy1=y0+(y+1)*sh/dh;
-    let s=0,n=0;
+    let s=0,n=0,sr=0,sg=0,sb=0;
     for(let yy=Math.floor(sy0);yy<Math.max(Math.floor(sy0)+1,Math.ceil(sy1));yy++)
       for(let xx=Math.floor(sx0);xx<Math.max(Math.floor(sx0)+1,Math.ceil(sx1));xx++){
-        if(xx<cw&&yy<chh){s+=g[yy*cw+xx];n++}}
+        if(xx<cw&&yy<chh){const q=yy*cw+xx;s+=g[q];n++;if(hasC){sr+=data[q*4];sg+=data[q*4+1];sb+=data[q*4+2]}}}
     px[y*dw+x]=n?s/n:255;
+    if(hasC){const i=y*dw+x;cR[i]=n?sr/n:255;cG[i]=n?sg/n:255;cB[i]=n?sb/n:255}
   }
   const th=+$('th').value,mode=$('dith').value,on=new Uint8Array(dw*dh);
   if(mode==='fs'||mode==='atk'){
@@ -386,9 +402,35 @@ function braille(){
     for(let i=0;i<lines.length;i++)lines[i]=p+lines[i]+p;
     for(let i=0;i<pad;i++){lines.unshift(e);lines.push(e)}}
   text=lines.join('\n');
+  /* per-cell original colors: average of the lit dots (falls back to the whole cell) */
+  colorGrid=[];
+  const useC=hasC&&$('origCol').checked;
+  if(hasC){
+    const cgr=[];
+    for(let cy=0;cy<dh;cy+=4){const rw=[];
+      for(let cxx=0;cxx<dw;cxx+=2){
+        let lr=0,lg=0,lb=0,ln=0,ar=0,ag=0,ab=0,an=0;
+        for(let dx=0;dx<2;dx++)for(let dy=0;dy<4;dy++){
+          const x=cxx+dx,y=cy+dy;if(x>=dw||y>=dh)continue;
+          const sx=fx?dw-1-x:x,sy=fy?dh-1-y:y,i=sy*dw+sx;
+          ar+=cR[i];ag+=cG[i];ab+=cB[i];an++;
+          if(get(x,y)){lr+=cR[i];lg+=cG[i];lb+=cB[i];ln++}
+        }
+        rw.push(ln?[lr/ln,lg/ln,lb/ln]:an?[ar/an,ag/an,ab/an]:null);
+      }
+      cgr.push(rw);
+    }
+    if(pad){
+      for(let i=0;i<cgr.length;i++)cgr[i]=[...new Array(pad).fill(null),...cgr[i],...new Array(pad).fill(null)];
+      for(let i=0;i<pad;i++){cgr.unshift(new Array(chars+pad*2).fill(null));cgr.push(new Array(chars+pad*2).fill(null))}
+    }
+    colorGrid=cgr;
+  }
+  if(text!==lastText){lastText=text;resetEdits()}
   const o=$('out');o.textContent=text;o.style.fontSize=$('fs').value+'px';
   const th2={bw:['#000','#fff'],wb:['#fff','#000'],gr:['#020a02','#35ff5a'],am:['#0b0700','#ffb000']}[$('theme').value];
   o.style.background=th2[0];o.style.color=th2[1];
+  if(useC)o.innerHTML=coloredHTML(lines);
   const pc=$('pv'),pg=pc.getContext('2d'),P=Math.max(2,Math.round(+$('fs').value/3));
   const gp=grid.map(r=>r.slice()),cols=chars+pad*2;
   if(pad){for(let i=0;i<gp.length;i++)gp[i]=[...new Array(pad).fill(0),...gp[i],...new Array(pad).fill(0)];
@@ -397,7 +439,7 @@ function braille(){
   pc.width=cols*2*P+mg*2;pc.height=gp.length*4*P+mg*2;
   pg.fillStyle=th2[0];pg.fillRect(0,0,pc.width,pc.height);pg.fillStyle=th2[1];
   const bx=[[0,0,1],[0,1,2],[0,2,4],[1,0,8],[1,1,16],[1,2,32],[0,3,64],[1,3,128]];
-  gp.forEach((r,ry)=>r.forEach((b,cn)=>{if(b)bx.forEach(d=>{if(b&d[2]){pg.beginPath();pg.arc(mg+(cn*2+d[0]+.5)*P,mg+(ry*4+d[1]+.5)*P,P*.4,0,6.3);pg.fill()}})}));
+  gp.forEach((r,ry)=>r.forEach((b,cn)=>{if(b&&useC){const cc=origAt(cn,ry);pg.fillStyle=cc?rgb(adj(cc)):th2[1]}if(b)bx.forEach(d=>{if(b&d[2]){pg.beginPath();pg.arc(mg+(cn*2+d[0]+.5)*P,mg+(ry*4+d[1]+.5)*P,P*.4,0,6.3);pg.fill()}})}));
   const tx=$('pmode').value==='text';o.classList.toggle('hid',!tx);pc.classList.toggle('hid',tx);
 }
 ['w','th','br','co','dith','blank','inv','trim','flipx','flipy','trail','border','fs','theme','pmode'].forEach(i=>$(i).addEventListener('input',()=>{
@@ -412,6 +454,34 @@ function gcol(x,y,mx,my){
   const t=d==='h'?xs:d==='v'?ys:d==='d'?(xs+ys)/2:((1-xs)+ys)/2;
   return [0,1,2].map(i=>Math.round(a[i]+(b[i]-a[i])*t));
 }
+function origOn(){return !!uploadedImg&&$('origCol').checked&&colorGrid.length>0}
+function adj(c){const b=+$('boost').value/100;if(!b)return c;const m=Math.max(c[0],c[1],c[2]);if(m<1)return c;const f=1+(255/m-1)*b;return c.map(v=>Math.min(255,v*f))}
+const rgb=c=>'rgb('+c.map(v=>Math.round(v)).join(',')+')';
+function origAt(x,y){const r=colorGrid[y];return(r&&r[x])||null}
+function isEditAt(x,y,ch){const r=baseGrid[y-oy],b=r&&r[x-ox];return b===undefined||b!==ch}
+function colorFor(x,y,ch,mx,my){
+  const ed=isEditAt(x,y,ch);
+  if(!ed&&origOn()){const c=origAt(x-ox,y-oy);if(c)return adj(c).map(Math.round)}
+  if(ed&&!$('editGrad').checked)return h2r($('editCol').value);
+  return gcol(x,y,mx,my);
+}
+function coloredHTML(lines){
+  const esc=c=>c==='&'?'&amp;':c==='<'?'&lt;':c==='>'?'&gt;':c;
+  let h='';
+  lines.forEach((ln,y)=>{
+    let cur=null,buf='';const chs=[...ln];
+    chs.forEach((ch,x)=>{
+      const c=origAt(x,y),k=c?rgb(adj(c)):'';
+      if(k!==cur){if(buf)h+=cur?'<span style="color:'+cur+'">'+buf+'</span>':buf;buf='';cur=k}
+      buf+=esc(ch);
+    });
+    if(buf)h+=cur?'<span style="color:'+cur+'">'+buf+'</span>':buf;
+    h+='\n';
+  });
+  return h.slice(0,-1);
+}
+function resetEdits(){grid=[];baseGrid=[];ox=0;oy=0;cursor={x:0,y:0}}
+function updImgUI(){document.querySelectorAll('.imgOnly').forEach(e=>e.classList.toggle('hid',!uploadedImg))}
 function buildBaseGrid(){
   const L=text.split('\n').map(l=>[...l]);
   const w=Math.max(1,...L.map(l=>l.length)),h=L.length;
@@ -419,18 +489,18 @@ function buildBaseGrid(){
   if(!grid.length)grid=baseGrid.map(r=>r.slice());
 }
 function ensureGrid(x,y){
-  while(y<0){grid.unshift(Array(Math.max(1,...grid.map(r=>r.length||1))).fill(' '));y++;cursor.y++;}
-  while(x<0){for(let r of grid)r.unshift(' ');x++;cursor.x++;}
+  while(y<0){grid.unshift(Array(Math.max(1,...grid.map(r=>r.length||1))).fill(' '));y++;cursor.y++;oy++;}
+  while(x<0){for(let r of grid)r.unshift(' ');x++;cursor.x++;ox++;}
   while(grid.length<=y)grid.push([]);
   const w=Math.max(x+1,...grid.map(r=>r.length||0));
   for(let r of grid)while(r.length<w)r.push(' ');
 }
 function insertRowTop(){
   const w=Math.max(1,...grid.map(r=>r.length||1));
-  grid.unshift(Array(w).fill(' '));
+  grid.unshift(Array(w).fill(' '));oy++;
 }
 function insertColLeft(){
-  for(let r of grid)r.unshift(' ');
+  for(let r of grid)r.unshift(' ');ox++;
 }
 function tfx(){
   buildBaseGrid();
@@ -441,11 +511,9 @@ function tfx(){
     let line='';
     for(let x=0;x<fullW;x++){
       const ch=grid[y]&&grid[y][x]?grid[y][x]:' ';
-      const isEdit=!baseGrid[y]||!baseGrid[y][x]||baseGrid[y][x]!==ch;
-      let c;
-      if(isEdit&&!$('editGrad').checked)c=h2r($('editCol').value);
-      else c=gcol(x,y,fullW,fullH);
-      if((ch===' '||ch==='\u2800')&&!$('gblank').checked&&!isEdit){line+=ch;continue;}
+      const isEdit=isEditAt(x,y,ch);
+      const c=colorFor(x,y,ch,fullW,fullH);
+      if((ch===' '||ch==='\u2800')&&!isEdit&&(!$('gblank').checked||origOn())){line+=ch;continue;}
       line+=E+'[38;2;'+c[0]+';'+c[1]+';'+c[2]+'m'+ch+E+'[0m';
     }
     out+=line+'\n';
@@ -454,6 +522,7 @@ function tfx(){
 }
 function grad(){
   if(step!==3)return;
+  $('origNote').classList.toggle('hid',!origOn());
   $('gbar').style.background='linear-gradient(90deg,'+$('c1').value+','+$('c2').value+')';
   buildBaseGrid();
   const fullH=Math.max(1,grid.length),fullW=Math.max(1,...grid.map(r=>r.length||0));
@@ -475,11 +544,10 @@ function grad(){
     const code=ch.charCodeAt(0)-0x2800;
     const isBraille=code>=0&&code<=255&&ch!==' ';
     if(isBraille){
-      pg.fillStyle='rgb('+gcol(x,y,fullW,fullH).join(',')+')';
+      pg.fillStyle=rgb(colorFor(x,y,ch,fullW,fullH));
       dots.forEach(d=>{if(code&d[2]){pg.beginPath();pg.arc(mg+(x*2+d[0]+.5)*P,mg+(y*4+d[1]+.5)*P,P*.4,0,6.3);pg.fill()}});
     }else if(ch!==' '){
-      const c=$('editGrad').checked?gcol(x,y,fullW,fullH):h2r($('editCol').value);
-      pg.fillStyle='rgb('+c.join(',')+')';
+      pg.fillStyle=rgb(colorFor(x,y,ch,fullW,fullH));
       pg.font='bold '+(P*3.6)+'px system-ui,sans-serif';
       pg.textAlign='center';pg.textBaseline='middle';
       pg.fillText(ch,mg+(x*2+1)*P,mg+(y*4+2)*P);
@@ -517,7 +585,7 @@ $('editBtn').onclick=()=>{
 };
 $('editCol').addEventListener('input',()=>$('editHex').value=$('editCol').value);
 $('editHex').addEventListener('input',()=>{const v=$('editHex').value;if(okHex(v))$('editCol').value=fixHex(v)});
-$('clearEdits').onclick=()=>{grid=[];baseGrid=[];cursor={x:0,y:0};grad()};
+$('clearEdits').onclick=()=>{resetEdits();grad()};
 
 const borders={
   double:{tl:'╔',tr:'╗',bl:'╚',br:'╝',h:'═',v:'║'},
@@ -603,7 +671,7 @@ function applyBorderPreset(){
   }
   newGrid.push([b.bl,...Array(cw).fill(b.h),b.br]);
   grid=newGrid;
-  baseGrid=L.map(r=>{while(r.length<w)r.push(' ');return r});
+  baseGrid=L.map(r=>{while(r.length<w)r.push(' ');return r});ox++;oy++;
   cursor={x:1,y:1};
   if(step!==3)go(3);
   grad();
@@ -708,7 +776,7 @@ pasteCatcher.addEventListener('paste',function(e){
 function showThanks(){$('modal').classList.remove('hid');try{window.open('https://t.me/lenzyspeople','_blank','noopener')}catch(e){}}
 $('mclose').onclick=()=>$('modal').classList.add('hid');
 $('dl').onclick=async()=>{
-  const rows=+$('termRows').value||26,cols=+$('termCols').value||80;const data='\x1b[8;'+rows+';'+cols+'t\n'+tfx(),nm=($('name').value||'art').trim().replace(/[^\w\-]+/g,'_')||'art';
+  const rows=+$('termRows').value||26,cols=+$('termCols').value||80;const data='\x1b[8;'+rows+';'+cols+'t\n'+tfx(),nm=((uploadedImg&&uploadedName)||$('name').value||'art').trim().replace(/[^\w\-]+/g,'_')||'art';
   try{
     const blob=new Blob([data],{type:'text/plain;charset=utf-8'});
     const url=URL.createObjectURL(blob);
@@ -731,6 +799,11 @@ $('dl').onclick=async()=>{
     }
   }
 };
+/* ---------- original-color controls (kept in sync between ASCII + Gradient panels) ---------- */
+function refreshColors(){if(step===2)braille();else if(step===3)grad()}
+['origCol','origCol2'].forEach(id=>$(id).addEventListener('input',e=>{$('origCol').checked=$('origCol2').checked=e.target.checked;refreshColors()}));
+[['boost','boostV'],['boost2','boostV2']].forEach(p=>$(p[0]).addEventListener('input',e=>{
+  $('boost').value=$('boost2').value=e.target.value;$('boostV').textContent=$('boostV2').textContent=e.target.value;refreshColors()}));
 /* ---------- navigation ---------- */
 function go(n){
   step=n;
