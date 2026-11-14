@@ -147,9 +147,6 @@ details.own{margin-top:12px;font-size:12px;color:var(--mu)}details.own summary{c
     <input type="text" id="psearch" placeholder="Search presets…">
     <div id="pgrid" class="pgrid"></div>
     <div id="pstat" class="sub"></div>
-    <input type="file" id="pimp" accept=".tfx,.txt" multiple style="display:none">
-    <button class="btn sec" id="pimpBtn" type="button" style="width:100%;margin-top:6px">Import .tfx from your device</button>
-    <details class="own"><summary>Site owner: how presets load</summary><p class="sub">Put your <code>.tfx</code> files in the same folder as this page. They are found automatically when the server lists folders, or on GitHub Pages. On other hosts add a <code>presets.json</code> next to them, like <code>["Neon.tfx","Wolf.tfx"]</code>.</p></details>
    </div>
    <div id="dimsRow" class="sub" style="margin:0 0 4px">Canvas: <b id="dims" style="color:#fff"></b></div>
    <div id="mText">
@@ -823,7 +820,7 @@ pasteCatcher.addEventListener('paste',function(e){
 function showThanks(){$('modal').classList.remove('hid');try{window.open('https://t.me/lenzyspeople','_blank','noopener')}catch(e){}}
 $('mclose').onclick=()=>$('modal').classList.add('hid');
 $('dl').onclick=async()=>{
-  const rows=+$('termRows').value||26,cols=+$('termCols').value||80;const data='\x1b[8;'+rows+';'+cols+'t\n'+tfx(),nm=((isImg()&&uploadedName)||$('name').value||'art').trim().replace(/[^\w\-]+/g,'_')||'art';
+  const rows=+$('termRows').value||26,cols=+$('termCols').value||80;const TK='<<$clear>>',pc=(tab==='presets'&&cur&&cur.clr)||0,data='\x1b[8;'+rows+';'+cols+'t\n'+(pc===1?TK:'')+tfx()+(pc===2?TK:''),nm=((isImg()&&uploadedName)||$('name').value||'art').trim().replace(/[^\w\-]+/g,'_')||'art';
   try{
     const blob=new Blob([data],{type:'text/plain;charset=utf-8'});
     const url=URL.createObjectURL(blob);
@@ -856,6 +853,8 @@ function refreshColors(){if(step===2)braille();else if(step===3)grad()}
 const PAL=[[0,0,0],[205,49,49],[13,188,121],[229,229,16],[36,114,200],[188,63,188],[17,168,205],[229,229,229],[102,102,102],[241,76,76],[35,209,139],[245,245,67],[59,142,234],[214,112,214],[41,184,219],[255,255,255]];
 const a256=n=>{if(n<16)return PAL[n];if(n>=232){const v=8+(n-232)*10;return[v,v,v]}n-=16;const f=v=>v?55+v*40:0;return[f(Math.floor(n/36)),f(Math.floor(n/6)%6),f(n%6)]};
 function parseTfx(t){
+  const TK='<<$clear>>',ix=t.indexOf(TK);let clr=0;
+  if(ix>-1){clr=t.slice(0,ix).replace(/\x1b\[8;\d+;\d+t\r?\n?/,'').trim()===''?1:2;t=t.split(TK).join('')}
   const rows=[[]];let col=null,w=80,h=26,m,hdr=false;const re=/\x1b\[([0-9;]*)([A-Za-z])|([\s\S])/gu;
   while((m=re.exec(t))){
     if(m[3]!==undefined){const c=m[3];if(c==='\n'){if(hdr&&rows.length===1&&!rows[0].length)hdr=false;else rows.push([])}else if(c!=='\r')rows[rows.length-1].push({c:c,k:col});continue}
@@ -869,7 +868,7 @@ function parseTfx(t){
   }
   while(rows.length&&!rows[rows.length-1].length)rows.pop();
   const cols=Math.max(1,...rows.map(r=>r.length));
-  return{lines:rows.map(r=>r.map(x=>x.c).join('')),colors:rows.map(r=>r.map(x=>x.k)),cols:cols,w:w,h:h};
+  return{lines:rows.map(r=>r.map(x=>x.c).join('')),colors:rows.map(r=>r.map(x=>x.k)),cols:cols,w:w,h:h,clr:clr};
 }
 const DOTS=[[0,0,1],[0,1,2],[0,2,4],[1,0,8],[1,1,16],[1,2,32],[0,3,64],[1,3,128]];
 function paintGrid(cv,p,maxW,maxH){
@@ -929,16 +928,6 @@ function setTab(t){
 document.querySelectorAll('#seg button').forEach(b=>b.onclick=()=>{touched=true;setTab(b.dataset.t)});
 document.querySelectorAll('#steps button').forEach(b=>b.onclick=()=>go(+b.dataset.s));
 $('psearch').addEventListener('input',renderGrid);
-async function importFiles(fl){
-  let last=null;
-  for(const f of fl){if(!/\.(tfx|txt)$/i.test(f.name))continue;try{last=addPreset(nice(f.name),await f.text())||last}catch(e){}}
-  if(last){touched=true;setTab('presets');pick(last);toast('Preset added')}else toast('No valid .tfx found');
-}
-$('pimpBtn').onclick=()=>$('pimp').click();
-$('pimp').addEventListener('change',e=>{importFiles([...e.target.files]);e.target.value=''});
-window.addEventListener('dragover',e=>{e.preventDefault();document.body.classList.add('drop')});
-window.addEventListener('dragleave',e=>{if(!e.relatedTarget)document.body.classList.remove('drop')});
-window.addEventListener('drop',e=>{e.preventDefault();document.body.classList.remove('drop');if(e.dataTransfer.files.length)importFiles([...e.dataTransfer.files])});
 async function findPresets(){
   const out=new Set(),base=new URL('./',location.href);
   const add=u=>{try{const x=new URL(u,base);if(x.origin===location.origin&&/\.tfx$/i.test(x.pathname))out.add(x.href)}catch(e){}};
@@ -953,11 +942,11 @@ async function findPresets(){
 }
 async function loadPresets(){
   $('pgrid').innerHTML='<div class="sk"></div><div class="sk"></div>';
-  if(location.protocol==='file:'){$('pgrid').innerHTML='';$('pstat').textContent='Presets load automatically when this page is opened from a web server. You can still import .tfx files below.';return}
+  if(location.protocol==='file:'){$('pgrid').innerHTML='';$('pstat').textContent='Presets load when this page is opened from a web server (not as a local file).';return}
   const urls=await findPresets();
   await Promise.all(urls.map(async u=>{try{const r=await fetch(u);if(r.ok)addPreset(nice(u),await r.text())}catch(e){}}));
   renderGrid();
-  if(!PRE.length){$('pstat').textContent='No presets here yet. You can import your own .tfx files below.';return}
+  if(!PRE.length){$('pstat').textContent='No presets available yet.';return}
   if(!touched&&step===1)setTab('presets');
 }
 /* ---------- navigation ---------- */
