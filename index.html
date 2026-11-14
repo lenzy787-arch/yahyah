@@ -97,6 +97,37 @@ main{background-image:radial-gradient(#ffffff10 1px,transparent 1px),radial-grad
 .term-dots span:nth-child(3){background:#28c840}
 .term-title{flex:1;text-align:center;color:#999;font-size:12px;font-family:-apple-system,system-ui;margin-right:50px}
 #termFrame canvas{display:block;background:#000}
+
+/* ---- v3 UI ---- */
+.panel{width:330px}
+main{position:relative;padding-top:70px}
+#steps{position:absolute;top:14px;left:50%;transform:translateX(-50%);display:flex;gap:4px;background:#0b0b0e;border:1px solid var(--bd);border-radius:14px;padding:4px;z-index:3;box-shadow:0 10px 30px #0008}
+#steps button{display:flex;align-items:center;gap:8px;background:none;border:0;color:var(--mu);padding:8px 14px;border-radius:10px;cursor:pointer;font:600 12px Inter,system-ui,sans-serif;transition:.18s}
+#steps button i{font-style:normal;width:20px;height:20px;border-radius:50%;display:grid;place-items:center;background:#1b1b21;font-size:11px}
+#steps button.on{background:#14141a;color:#fff;box-shadow:inset 0 0 0 1px #2a2a36}
+#steps button.on i{background:var(--ac);color:#fff}
+#steps button.done i{background:#1f8a4c;color:#fff}
+#steps button.skip{opacity:.35;pointer-events:none}
+.seg{display:flex;background:#0d0d10;border:1px solid var(--bd);border-radius:12px;padding:3px;margin:10px 0 14px}
+.seg button{flex:1;background:none;border:0;color:var(--mu);padding:9px 0;border-radius:9px;font:600 13px Inter,system-ui,sans-serif;cursor:pointer;transition:.15s}
+.seg button.on{background:#1a1a22;color:#fff;box-shadow:inset 0 0 0 1px #2c2c3a}
+.pgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:12px 0}
+.pc{background:#0d0d10;border:1px solid var(--bd);border-radius:12px;padding:6px;cursor:pointer;color:var(--tx);text-align:left;display:flex;flex-direction:column;gap:3px;transition:.15s;font-family:inherit}
+.pc:hover{border-color:#3a3a4c;transform:translateY(-2px);box-shadow:0 8px 24px #0009}
+.pc.on{border-color:var(--ac);box-shadow:0 0 0 3px #3b6cff2e}
+.pc .th{display:grid;place-items:center;height:84px;background:#0c0c0c;border-radius:8px;overflow:hidden}
+.pc .th canvas{max-width:100%;max-height:100%}
+.pc b{font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:0 2px}
+.pc i{font-style:normal;font-size:10.5px;color:var(--mu);padding:0 2px}
+.sk{height:118px;border-radius:12px;background:linear-gradient(90deg,#0d0d10,#17171d,#0d0d10);background-size:200% 100%;animation:sh 1.2s infinite}
+@keyframes sh{to{background-position:-200% 0}}
+details.own{margin-top:12px;font-size:12px;color:var(--mu)}details.own summary{cursor:pointer}details.own code{background:#15151a;padding:1px 5px;border-radius:4px;color:#cfd3ff}
+#pstage{width:100%;display:flex;justify-content:center;margin:auto}
+#pFrame{background:#0c0c0c;border-radius:12px;overflow:hidden;box-shadow:0 25px 70px #000c,0 0 0 1px #2a2a2a;width:min(100%,960px)}
+#pp{display:block;width:100%;height:auto}
+#pEmpty{padding:90px 24px;text-align:center;color:var(--mu);line-height:1.7;font-size:14px}
+.drop{outline:2px dashed var(--ac);outline-offset:-10px}
+@media(max-width:760px){#steps{position:static;transform:none;margin:0 auto 12px;width:max-content}main{padding-top:14px}#steps button span{display:none}}
 </style></head>
 <body oncontextmenu="return false">
 <nav class="rail">
@@ -110,31 +141,44 @@ main{background-image:radial-gradient(#ffffff10 1px,transparent 1px),radial-grad
 <aside class="panel">
  <div class="scroll">
   <section id="s1">
-   <h2>Create</h2><p class="sub">Type a name or upload an image, then drag to shape it.</p>
-   <label>Name / Text</label>
-   <input type="text" id="name" placeholder="Enter a name…" value="Lenzy">
-   <label>Font</label>
-   <select id="font">
-    <option value="Arial">Basic (Arial)</option><option value="Calibri, Carlito, Arial">Calibri</option>
-    <option>Bebas Neue</option><option>Anton</option><option>Pacifico</option><option>Lobster</option>
-    <option>Permanent Marker</option><option>Playfair Display</option><option>Orbitron</option>
-    <option>Caveat</option><option>Roboto Mono</option><option>Press Start 2P</option>
-    <option value="Times New Roman">Times New Roman</option><option value="Impact">Impact</option>
-   </select>
-   <label><span class="row"><span>Size</span><span id="sizeV">120</span></span></label>
-   <input type="range" id="size" min="10" max="800" value="120">
-   <label><span class="row"><span>Letter spacing</span><span id="lsV">0</span></span></label>
-   <input type="range" id="ls" min="-10" max="60" value="0">
-   <h3>IMAGE</h3>
-   <label>Or upload an image</label>
-   <input type="file" id="imgUpload" accept="image/*" style="display:none">
-   <button class="btn sec" id="imgBtn" type="button" style="width:100%;margin-bottom:6px">Choose image</button>
-   <div id="imgName" style="font-size:11px;color:var(--mu);margin-bottom:8px;word-break:break-all"></div>
-   <button class="btn sec" id="clearImg" type="button" style="width:100%;margin-bottom:10px;display:none">Clear image</button>
-   <div class="row"><button class="btn sec" id="fit" type="button">Fit to text</button><button class="btn sec" id="ctr" type="button">Center text</button></div>
-   <label>Image size: <b id="dims" style="color:#fff"></b><br>Drag the blue squares to resize the white image, drag the text to move it, drag the orange dot to make the text bigger or smaller. Uploaded image fills the canvas.</label>
-   <div class="chk"><input type="checkbox" id="bold"> Bold</div>
-   <div class="chk"><input type="checkbox" id="ital"> Italic</div>
+   <h2>Create</h2><p class="sub">Pick a ready-made preset, type a name, or upload an image.</p>
+   <div class="seg" id="seg"><button type="button" data-t="presets">Presets</button><button type="button" data-t="text" class="on">Text</button><button type="button" data-t="image">Image</button></div>
+   <div id="mPresets" class="hid">
+    <input type="text" id="psearch" placeholder="Search presets…">
+    <div id="pgrid" class="pgrid"></div>
+    <div id="pstat" class="sub"></div>
+    <input type="file" id="pimp" accept=".tfx,.txt" multiple style="display:none">
+    <button class="btn sec" id="pimpBtn" type="button" style="width:100%;margin-top:6px">Import .tfx from your device</button>
+    <details class="own"><summary>Site owner: how presets load</summary><p class="sub">Put your <code>.tfx</code> files in the same folder as this page. They are found automatically when the server lists folders, or on GitHub Pages. On other hosts add a <code>presets.json</code> next to them, like <code>["Neon.tfx","Wolf.tfx"]</code>.</p></details>
+   </div>
+   <div id="dimsRow" class="sub" style="margin:0 0 4px">Canvas: <b id="dims" style="color:#fff"></b></div>
+   <div id="mText">
+    <label>Name / Text</label>
+    <input type="text" id="name" placeholder="Enter a name…" value="Lenzy">
+    <label>Font</label>
+    <select id="font">
+     <option value="Arial">Basic (Arial)</option><option value="Calibri, Carlito, Arial">Calibri</option>
+     <option>Bebas Neue</option><option>Anton</option><option>Pacifico</option><option>Lobster</option>
+     <option>Permanent Marker</option><option>Playfair Display</option><option>Orbitron</option>
+     <option>Caveat</option><option>Roboto Mono</option><option>Press Start 2P</option>
+     <option value="Times New Roman">Times New Roman</option><option value="Impact">Impact</option>
+    </select>
+    <label><span class="row"><span>Size</span><span id="sizeV">120</span></span></label>
+    <input type="range" id="size" min="10" max="800" value="120">
+    <label><span class="row"><span>Letter spacing</span><span id="lsV">0</span></span></label>
+    <input type="range" id="ls" min="-10" max="60" value="0">
+    <div class="chk"><input type="checkbox" id="bold"> Bold</div>
+    <div class="chk"><input type="checkbox" id="ital"> Italic</div>
+    <div class="row"><button class="btn sec" id="fit" type="button">Fit to text</button><button class="btn sec" id="ctr" type="button">Center text</button></div>
+    <p class="sub" style="margin-top:10px">Drag the blue squares to resize the canvas, drag the text to move it, and drag the orange dot to scale it.</p>
+   </div>
+   <div id="mImage" class="hid">
+    <input type="file" id="imgUpload" accept="image/*" style="display:none">
+    <button class="btn sec" id="imgBtn" type="button" style="width:100%;margin-bottom:6px">Choose image</button>
+    <div id="imgName" style="font-size:11px;color:var(--mu);margin-bottom:8px;word-break:break-all"></div>
+    <button class="btn sec" id="clearImg" type="button" style="width:100%;margin-bottom:10px;display:none">Clear image</button>
+    <p class="sub">Drag the blue squares to crop or resize the canvas. The image keeps its original colors in the next steps.</p>
+   </div>
   </section>
 
   <section id="s4" class="hid"><h2>Credits</h2><p class="sub">Made for the community.</p>
@@ -143,7 +187,7 @@ main{background-image:radial-gradient(#ffffff10 1px,transparent 1px),radial-grad
   <section id="s3" class="hid">
    <h2>Gradient</h2><p class="sub">Pick a start and end color, then export .tfx.</p>
    <div class="imgOnly hid"><h3>IMAGE COLORS</h3>
-   <div class="chk"><input type="checkbox" id="origCol2" checked> Keep image's original colors</div>
+   <div class="chk"><input type="checkbox" id="origCol2" checked> Keep original colors</div>
    <label><span class="row"><span>Brighten dark colors</span><span id="boostV2">0</span></span></label>
    <input type="range" id="boost2" min="0" max="100" value="0"><p class="sub hid" id="origNote" style="margin-top:8px">Original colors are on, so the gradient below is ignored. Turn them off to use a gradient.</p></div>
    
@@ -201,7 +245,7 @@ main{background-image:radial-gradient(#ffffff10 1px,transparent 1px),radial-grad
    <label>Blank dot character</label>
    <select id="blank"><option value="2800">⠀ Empty braille (U+2800)</option><option value="2801">⠁ Single dot (visible blank)</option><option value="0020">Space</option></select>
    <div class="imgOnly hid"><h3>IMAGE COLORS</h3>
-   <div class="chk"><input type="checkbox" id="origCol" checked> Keep image's original colors</div>
+   <div class="chk"><input type="checkbox" id="origCol" checked> Keep original colors</div>
    <label><span class="row"><span>Brighten dark colors</span><span id="boostV">0</span></span></label>
    <input type="range" id="boost" min="0" max="100" value="0"></div>
    <h3>OPTIONS</h3>
@@ -230,6 +274,8 @@ main{background-image:radial-gradient(#ffffff10 1px,transparent 1px),radial-grad
 </aside>
 
 <main>
+ <nav id="steps"><button type="button" data-s="1" class="on"><i>1</i><span>Create</span></button><button type="button" data-s="2"><i>2</i><span>Braille</span></button><button type="button" data-s="3"><i>3</i><span>Style &amp; Export</span></button></nav>
+ <div id="pstage" class="hid"><div id="pFrame"><div class="term-bar"><div class="term-dots"><span></span><span></span><span></span></div><div class="term-title" id="pname">Preset preview</div></div><canvas id="pp" class="hid"></canvas><div id="pEmpty">Pick a preset on the left to preview it here.</div></div></div>
  <div id="stage"><canvas id="v1" width="640" height="240"></canvas><div id="tb"><i id="th"></i></div><i class="hd" data-d="n"></i><i class="hd" data-d="s"></i><i class="hd" data-d="e"></i><i class="hd" data-d="w"></i><i class="hd" data-d="ne"></i><i class="hd" data-d="nw"></i><i class="hd" data-d="se"></i><i class="hd" data-d="sw"></i></div>
  <canvas id="pv" class="hid"></canvas>
  <div id="termFrame" class="hid">
@@ -249,12 +295,12 @@ main{background-image:radial-gradient(#ffffff10 1px,transparent 1px),radial-grad
 (function(){
 const $=id=>document.getElementById(id);
 const cv=$('v1'),cx=cv.getContext('2d',{willReadFrequently:true});
-let step=1,text='';const S={W:640,H:240,tx:320,ty:120};let bb={lf:1,rt:1,asc:1,ds:1},vs=1,drag=null;let uploadedImg=null;let editMode=false;let grid=[];let cursor={x:0,y:0};let baseGrid=[];let colorGrid=[],ox=0,oy=0,lastText=null,uploadedName='';
+let step=1,text='';const S={W:640,H:240,tx:320,ty:120};let bb={lf:1,rt:1,asc:1,ds:1},vs=1,drag=null;let uploadedImg=null;let editMode=false;let grid=[];let cursor={x:0,y:0};let baseGrid=[];let tab='text',cur=null,lastCur=null,touched=false;const PRE=[];const isImg=()=>tab==='image'&&!!uploadedImg;let colorGrid=[],ox=0,oy=0,lastText=null,uploadedName='';
 /* ---------- Step 1: text image ---------- */
 async function draw(){
   const W=S.W,H=S.H;cv.width=W;cv.height=H;
   cx.fillStyle='#fff';cx.fillRect(0,0,W,H);
-  if(uploadedImg){
+  if(isImg()){
     // Draw uploaded image scaled to fit canvas
     const scale=Math.min(W/uploadedImg.width,H/uploadedImg.height);
     const iw=uploadedImg.width*scale,ih=uploadedImg.height*scale;
@@ -288,7 +334,7 @@ $('imgUpload').addEventListener('change',e=>{
   if(!file)return;
   const img=new Image();
   img.onload=()=>{
-    uploadedImg=img;uploadedName=file.name.replace(/\.[^.]+$/,'');
+    uploadedImg=img;setTab('image');uploadedName=file.name.replace(/\.[^.]+$/,'');
     // canvas takes the image's own proportions so it fills the canvas (no white bars)
     const m=Math.min(1,900/Math.max(img.width,img.height));
     S.W=Math.max(60,Math.round(img.width*m));S.H=Math.max(60,Math.round(img.height*m));S.tx=S.W/2;S.ty=S.H/2;
@@ -343,6 +389,7 @@ window.addEventListener('resize',layout);
 /* ---------- Step 2: braille ---------- */
 const bayer=[[0,8,2,10],[12,4,14,6],[3,11,1,9],[15,7,13,5]];
 function braille(){
+  if(tab==='presets')return;
   const cw=cv.width,chh=cv.height;
   const data=cx.getImageData(0,0,cw,chh).data;
   let g=new Float32Array(cw*chh);
@@ -361,7 +408,7 @@ function braille(){
   let dh=Math.max(4,Math.round(sh*dw/sw/4)*4);
   // resample (box/bilinear average)
   const px=new Float32Array(dw*dh);
-  const hasC=!!uploadedImg,cR=new Float32Array(hasC?dw*dh:0),cG=new Float32Array(hasC?dw*dh:0),cB=new Float32Array(hasC?dw*dh:0);
+  const hasC=isImg(),cR=new Float32Array(hasC?dw*dh:0),cG=new Float32Array(hasC?dw*dh:0),cB=new Float32Array(hasC?dw*dh:0);
   for(let y=0;y<dh;y++)for(let x=0;x<dw;x++){
     const sx0=x0+x*sw/dw,sx1=x0+(x+1)*sw/dw,sy0=y0+y*sh/dh,sy1=y0+(y+1)*sh/dh;
     let s=0,n=0,sr=0,sg=0,sb=0;
@@ -454,7 +501,7 @@ function gcol(x,y,mx,my){
   const t=d==='h'?xs:d==='v'?ys:d==='d'?(xs+ys)/2:((1-xs)+ys)/2;
   return [0,1,2].map(i=>Math.round(a[i]+(b[i]-a[i])*t));
 }
-function origOn(){return !!uploadedImg&&$('origCol').checked&&colorGrid.length>0}
+function origOn(){return (isImg()||(tab==='presets'&&!!cur))&&$('origCol').checked&&colorGrid.length>0}
 function adj(c){const b=+$('boost').value/100;if(!b)return c;const m=Math.max(c[0],c[1],c[2]);if(m<1)return c;const f=1+(255/m-1)*b;return c.map(v=>Math.min(255,v*f))}
 const rgb=c=>'rgb('+c.map(v=>Math.round(v)).join(',')+')';
 function origAt(x,y){const r=colorGrid[y];return(r&&r[x])||null}
@@ -481,7 +528,7 @@ function coloredHTML(lines){
   return h.slice(0,-1);
 }
 function resetEdits(){grid=[];baseGrid=[];ox=0;oy=0;cursor={x:0,y:0}}
-function updImgUI(){document.querySelectorAll('.imgOnly').forEach(e=>e.classList.toggle('hid',!uploadedImg))}
+function updImgUI(){const v=isImg()||(tab==='presets'&&!!cur);document.querySelectorAll('.imgOnly').forEach(e=>e.classList.toggle('hid',!v))}
 function buildBaseGrid(){
   const L=text.split('\n').map(l=>[...l]);
   const w=Math.max(1,...L.map(l=>l.length)),h=L.length;
@@ -776,7 +823,7 @@ pasteCatcher.addEventListener('paste',function(e){
 function showThanks(){$('modal').classList.remove('hid');try{window.open('https://t.me/lenzyspeople','_blank','noopener')}catch(e){}}
 $('mclose').onclick=()=>$('modal').classList.add('hid');
 $('dl').onclick=async()=>{
-  const rows=+$('termRows').value||26,cols=+$('termCols').value||80;const data='\x1b[8;'+rows+';'+cols+'t\n'+tfx(),nm=((uploadedImg&&uploadedName)||$('name').value||'art').trim().replace(/[^\w\-]+/g,'_')||'art';
+  const rows=+$('termRows').value||26,cols=+$('termCols').value||80;const data='\x1b[8;'+rows+';'+cols+'t\n'+tfx(),nm=((isImg()&&uploadedName)||$('name').value||'art').trim().replace(/[^\w\-]+/g,'_')||'art';
   try{
     const blob=new Blob([data],{type:'text/plain;charset=utf-8'});
     const url=URL.createObjectURL(blob);
@@ -804,14 +851,126 @@ function refreshColors(){if(step===2)braille();else if(step===3)grad()}
 ['origCol','origCol2'].forEach(id=>$(id).addEventListener('input',e=>{$('origCol').checked=$('origCol2').checked=e.target.checked;refreshColors()}));
 [['boost','boostV'],['boost2','boostV2']].forEach(p=>$(p[0]).addEventListener('input',e=>{
   $('boost').value=$('boost2').value=e.target.value;$('boostV').textContent=$('boostV2').textContent=e.target.value;refreshColors()}));
+
+/* ---------- v3: presets (.tfx files next to this page) ---------- */
+const PAL=[[0,0,0],[205,49,49],[13,188,121],[229,229,16],[36,114,200],[188,63,188],[17,168,205],[229,229,229],[102,102,102],[241,76,76],[35,209,139],[245,245,67],[59,142,234],[214,112,214],[41,184,219],[255,255,255]];
+const a256=n=>{if(n<16)return PAL[n];if(n>=232){const v=8+(n-232)*10;return[v,v,v]}n-=16;const f=v=>v?55+v*40:0;return[f(Math.floor(n/36)),f(Math.floor(n/6)%6),f(n%6)]};
+function parseTfx(t){
+  const rows=[[]];let col=null,w=80,h=26,m,hdr=false;const re=/\x1b\[([0-9;]*)([A-Za-z])|([\s\S])/gu;
+  while((m=re.exec(t))){
+    if(m[3]!==undefined){const c=m[3];if(c==='\n'){if(hdr&&rows.length===1&&!rows[0].length)hdr=false;else rows.push([])}else if(c!=='\r')rows[rows.length-1].push({c:c,k:col});continue}
+    const q=m[1].split(';').map(Number),f=m[2];
+    if(f==='t'&&q[0]===8){h=q[1]||h;w=q[2]||w;if(rows.length===1&&!rows[0].length)hdr=true}
+    else if(f==='m')for(let i=0;i<q.length;i++){const v=q[i];
+      if(v===0||v===39)col=null;
+      else if(v===38&&q[i+1]===2){col=[q[i+2],q[i+3],q[i+4]];i+=4}
+      else if(v===38&&q[i+1]===5){col=a256(q[i+2]);i+=2}
+      else if(v>=30&&v<=37)col=PAL[v-30];else if(v>=90&&v<=97)col=PAL[v-82]}
+  }
+  while(rows.length&&!rows[rows.length-1].length)rows.pop();
+  const cols=Math.max(1,...rows.map(r=>r.length));
+  return{lines:rows.map(r=>r.map(x=>x.c).join('')),colors:rows.map(r=>r.map(x=>x.k)),cols:cols,w:w,h:h};
+}
+const DOTS=[[0,0,1],[0,1,2],[0,2,4],[1,0,8],[1,1,16],[1,2,32],[0,3,64],[1,3,128]];
+function paintGrid(cv,p,maxW,maxH){
+  const n=p.lines.length,P=Math.max(.5,Math.min(5,maxW/(p.cols*2+2),maxH/(n*4+2))),g=cv.getContext('2d');
+  cv.width=Math.ceil((p.cols*2+2)*P);cv.height=Math.ceil((n*4+2)*P);
+  g.fillStyle='#0c0c0c';g.fillRect(0,0,cv.width,cv.height);g.font='bold '+(P*3.6)+'px system-ui,sans-serif';g.textAlign='center';g.textBaseline='middle';
+  p.lines.forEach((ln,y)=>[...ln].forEach((ch,x)=>{
+    if(ch===' ')return;const k=p.colors[y][x];g.fillStyle=k?rgb(k):'#ddd';
+    const code=ch.codePointAt(0)-0x2800;
+    if(code>=0&&code<=255){DOTS.forEach(d=>{if(code&d[2]){g.beginPath();g.arc((x*2+d[0]+1.5)*P,(y*4+d[1]+1.5)*P,P*.4,0,6.3);g.fill()}})}
+    else g.fillText(ch,(x*2+2)*P,(y*4+3)*P)}));
+}
+function addPreset(name,text){
+  const p=parseTfx(text);if(!p.lines.length)return null;
+  p.name=name;p.thumb=document.createElement('canvas');paintGrid(p.thumb,p,320,220);
+  PRE.push(p);PRE.sort((a,b)=>a.name.localeCompare(b.name,undefined,{numeric:true}));return p;
+}
+const nice=f=>decodeURIComponent(f.split('/').pop()).replace(/\.tfx$/i,'').replace(/[_-]+/g,' ').trim().replace(/\b\w/g,c=>c.toUpperCase());
+function renderGrid(){
+  const q=$('psearch').value.toLowerCase(),g=$('pgrid');g.innerHTML='';let n=0;
+  PRE.forEach(p=>{if(q&&p.name.toLowerCase().indexOf(q)<0)return;n++;
+    const b=document.createElement('button');b.type='button';b.className='pc'+(p===cur?' on':'');
+    b.innerHTML='<span class="th"></span><b></b><i></i>';b.firstChild.appendChild(p.thumb);
+    b.querySelector('b').textContent=p.name;b.querySelector('i').textContent=p.cols+' × '+p.lines.length;
+    b.onclick=()=>pick(p);b.ondblclick=()=>{pick(p);go(3)};g.appendChild(b)});
+  if(PRE.length)$('pstat').textContent=n?PRE.length+' preset'+(PRE.length>1?'s':'')+' · double-click to use':'No preset matches your search.';
+}
+function pick(p){
+  cur=p;$('origCol').checked=$('origCol2').checked=true;
+  const cl=(v,a,b)=>Math.max(a,Math.min(b,v));
+  $('termCols').value=cl(p.w||p.cols,40,200);$('termRows').value=cl(p.h||p.lines.length,10,60);
+  $('termColsV').textContent=$('termCols').value;$('termRowsV').textContent=$('termRows').value;
+  renderGrid();paintBig();updImgUI();updNav();
+}
+function paintBig(){
+  $('pEmpty').classList.toggle('hid',!!cur);$('pp').classList.toggle('hid',!cur);
+  if(!cur){$('pname').textContent='Preset preview';return}
+  paintGrid($('pp'),cur,1100,760);$('pname').textContent=cur.name+' — '+cur.cols+' × '+cur.lines.length;
+}
+function usePreset(){
+  if(tab==='presets'&&cur){text=cur.lines.join('\n');colorGrid=cur.colors;
+    if(lastCur!==cur||text!==lastText){lastCur=cur;lastText=text;resetEdits()}}
+}
+function updNav(){
+  $('cont').disabled=(tab==='presets'&&!cur&&step===1);
+  document.querySelectorAll('#steps button').forEach(b=>{const k=+b.dataset.s;
+    b.classList.toggle('on',k===step);b.classList.toggle('done',k<step&&!(k===2&&tab==='presets'));b.classList.toggle('skip',k===2&&tab==='presets')});
+}
+function setTab(t){
+  tab=t;
+  document.querySelectorAll('#seg button').forEach(b=>b.classList.toggle('on',b.dataset.t===t));
+  $('mPresets').classList.toggle('hid',t!=='presets');$('mText').classList.toggle('hid',t!=='text');$('mImage').classList.toggle('hid',t!=='image');
+  $('dimsRow').classList.toggle('hid',t==='presets');
+  $('stage').classList.toggle('hid',step!==1||t==='presets');$('pstage').classList.toggle('hid',step!==1||t!=='presets');
+  updImgUI();updNav();if(t==='presets')paintBig();else draw();
+}
+document.querySelectorAll('#seg button').forEach(b=>b.onclick=()=>{touched=true;setTab(b.dataset.t)});
+document.querySelectorAll('#steps button').forEach(b=>b.onclick=()=>go(+b.dataset.s));
+$('psearch').addEventListener('input',renderGrid);
+async function importFiles(fl){
+  let last=null;
+  for(const f of fl){if(!/\.(tfx|txt)$/i.test(f.name))continue;try{last=addPreset(nice(f.name),await f.text())||last}catch(e){}}
+  if(last){touched=true;setTab('presets');pick(last);toast('Preset added')}else toast('No valid .tfx found');
+}
+$('pimpBtn').onclick=()=>$('pimp').click();
+$('pimp').addEventListener('change',e=>{importFiles([...e.target.files]);e.target.value=''});
+window.addEventListener('dragover',e=>{e.preventDefault();document.body.classList.add('drop')});
+window.addEventListener('dragleave',e=>{if(!e.relatedTarget)document.body.classList.remove('drop')});
+window.addEventListener('drop',e=>{e.preventDefault();document.body.classList.remove('drop');if(e.dataTransfer.files.length)importFiles([...e.dataTransfer.files])});
+async function findPresets(){
+  const out=new Set(),base=new URL('./',location.href);
+  const add=u=>{try{const x=new URL(u,base);if(x.origin===location.origin&&/\.tfx$/i.test(x.pathname))out.add(x.href)}catch(e){}};
+  try{const r=await fetch(new URL('presets.json',base),{cache:'no-cache'});if(r.ok){const j=await r.json();(Array.isArray(j)?j:j.presets||[]).forEach(v=>add(typeof v==='string'?v:v&&v.file))}}catch(e){}
+  try{const r=await fetch(base,{cache:'no-cache'});if(r.ok){const d=new DOMParser().parseFromString(await r.text(),'text/html');d.querySelectorAll('a[href]').forEach(a=>add(a.getAttribute('href')))}}catch(e){}
+  if(/\.github\.io$/.test(location.hostname)){
+    try{const o=location.hostname.split('.')[0],sg=location.pathname.split('/').filter(Boolean);if(sg.length&&sg[sg.length-1].indexOf('.')>-1)sg.pop();
+      const repo=sg.length?sg[0]:o+'.github.io',dir=sg.slice(1).join('/');
+      const r=await fetch('https://api.github.com/repos/'+o+'/'+repo+'/contents/'+dir);
+      if(r.ok)(await r.json()).forEach(it=>/\.tfx$/i.test(it.name)&&add(it.name))}catch(e){}}
+  return[...out];
+}
+async function loadPresets(){
+  $('pgrid').innerHTML='<div class="sk"></div><div class="sk"></div>';
+  if(location.protocol==='file:'){$('pgrid').innerHTML='';$('pstat').textContent='Presets load automatically when this page is opened from a web server. You can still import .tfx files below.';return}
+  const urls=await findPresets();
+  await Promise.all(urls.map(async u=>{try{const r=await fetch(u);if(r.ok)addPreset(nice(u),await r.text())}catch(e){}}));
+  renderGrid();
+  if(!PRE.length){$('pstat').textContent='No presets here yet. You can import your own .tfx files below.';return}
+  if(!touched&&step===1)setTab('presets');
+}
 /* ---------- navigation ---------- */
 function go(n){
+  if(tab==='presets'&&n===2)n=step===3?1:3;
+  if(n>1&&tab==='presets'&&!cur)n=1;
   step=n;
   $('s1').classList.toggle('hid',n!==1);$('s2').classList.toggle('hid',n!==2);$('s3').classList.toggle('hid',n!==3);$('s4').classList.toggle('hid',n!==4);
-  $('stage').classList.toggle('hid',n!==1);$('termFrame').classList.toggle('hid',n!==3);$('cr').classList.toggle('hid',n!==4);if(n!==2){$('out').classList.add('hid');$('pv').classList.add('hid')}
+  $('stage').classList.toggle('hid',n!==1||tab==='presets');$('pstage').classList.toggle('hid',n!==1||tab!=='presets');$('termFrame').classList.toggle('hid',n!==3);$('cr').classList.toggle('hid',n!==4);if(n!==2){$('out').classList.add('hid');$('pv').classList.add('hid')}
   $('cont').classList.toggle('hid',n>=3);$('back').classList.toggle('hid',n===1);$('copy').classList.toggle('hid',n!==2);$('dl').classList.toggle('hid',n!==3);
   $('tCreate').classList.toggle('on',n===1);$('tBraille').classList.toggle('on',n===2);$('tGrad').classList.toggle('on',n===3);$('tCred').classList.toggle('on',n===4);
-  if(n===1)layout();if(n===2||n===3)braille();if(n===3){$('out').classList.add('hid');$('pv').classList.add('hid');grad()}
+  if(n===3)usePreset();updNav();
+  if(n===1&&tab!=='presets')layout();if(n===2||n===3)braille();if(n===3){$('out').classList.add('hid');$('pv').classList.add('hid');grad()}
 }
 $('cont').onclick=()=>go(step+1);$('back').onclick=()=>go(step-1);
 $('tCreate').onclick=()=>go(1);$('tBraille').onclick=()=>go(2);$('tGrad').onclick=()=>go(3);$('tCred').onclick=()=>go(4);
@@ -830,7 +989,7 @@ document.addEventListener('keydown',function(e){
 },true);
 document.addEventListener('selectstart',function(e){if(!e.target.closest('input,textarea,#out'))e.preventDefault()},true);
 document.addEventListener('dragstart',function(e){e.preventDefault()},true);
-draw();
+updNav();draw();loadPresets();
 document.fonts.ready.then(draw);
 })();
 </script>
