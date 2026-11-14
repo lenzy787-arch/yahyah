@@ -1,0 +1,29 @@
+<<$clear>>
+[8;27;106t
+
+ [ [38;2;128;128;128mUser Datagram Protocol[0m ]
+[38;2;57;255;20mVIP[0m| subnet            Domain Name System amplification flood (DNS)                          120s| CIDR [38;2;57;255;20m█[0m
+[38;2;57;255;20mVIP[0m| udpovh	       UDP High flood using costum proxies for high GBP'S                    120s| CIDR [38;2;57;255;20m█[0m
+[38;2;230;60;60mNaN[0m| socket            Basic UDP Flood for home connections & LOW GBP'S                      120s| CIDR [38;2;230;60;60m█[0m
+ [ [38;2;128;128;128mTransmission Control Protocol[0m ]
+[38;2;57;255;20mVIP[0m| tcp-kill          Legit TCP Data + randomized proxied SYN / DATA Variants               120s| CIDR [38;2;230;60;60m█[0m
+[38;2;57;255;20mVIP[0m| ovh               Valid OVH bypass using PSH, ACK & proxied 3 way handshake             120s| CIDR [38;2;57;255;20m█[0m
+[38;2;57;255;20mVIP[0m| tcpvalid          Valid TCP flood for MASS open connections low GBP'S                   120s| CIDR [38;2;57;255;20m█[0m
+[38;2;255;200;0mADD[0m| homehold          NTP Amplification for home connections & HIGH TIME                   3600s| CIDR [38;2;230;60;60m█[0m
+ [ [38;2;128;128;128mGame Methods[0m ]
+[38;2;57;255;20mVIP[0m| discord           Custom UDP payload based for DISCORDS VOIP servers                    120s| CIDR [38;2;230;60;60m█[0m
+[38;2;57;255;20mVIP[0m| fivem             Dynamic Query AUTH flood using static login tokens                    120s| CIDR [38;2;230;60;60m█[0m
+[38;2;57;255;20mVIP[0m| minecraft         Custom TCP payload only made for minecraft servers                    120s| CIDR [38;2;230;60;60m█[0m
+ [ [38;2;128;128;128mLayer 7 Methods[0m ]
+[38;2;57;255;20mVIP[0m| httpbypass        Node.js HTTP/2 Universal Bypass flood GEAD + GET & LOW HTTP-DDOS     2400s| CIDR [38;2;230;60;60m█[0m
+[38;2;57;255;20mVIP[0m| cloudflare        Node.js HTTP/2 Cookie cloudflare bypass EXPLOIT = 0% HTTP-DDOS        120s| CIDR [38;2;230;60;60m█[0m
+[38;2;255;200;0mADD[0m| httpsgov          Node.js HTTP/2 Universal Bypass flood GEAD + GET & NO Blacklist       120s| CIDR [38;2;230;60;60m█[0m
+[38;2;230;60;60mNaN[0m| https             Node.js HTTP/2 / 1.1 Mass user agents Flood using GET + HEAD          120s| CIDR [38;2;230;60;60m█[0m
+ [ [38;2;128;128;128mEthone Methods[0m ]
+[38;2;110;170;255mETH[0m| udp-ethone        Spoofed UDP randomized HIGH len packet flood + HIGH GBP'S & FLAGS     240s| CIDR [38;2;230;60;60m█[0m
+[38;2;110;170;255mETH[0m| http-ethone       Node.js HTTP/2 Get & Head flood. POST support & randomized Agents    2400s| CIDR [38;2;230;60;60m█[0m
+[38;2;110;170;255mETH[0m| tcp-ethone        Proxied SYN-ACK flood & randomized TCP flags (ACK / FIN /SYN)         240s| CIDR [38;2;230;60;60m█[0m
+[38;2;110;170;255mETH[0m| ovh-ethone        3way proxied PSH , ACK Handshake +  FLAGS (FIN / PSH / SYN)           240s| CIDR [38;2;230;60;60m█[0m
+════════════════════════════════════╤══════════════════════════════════════╤══════════════════════════════
+    Type "[38;2;110;170;255mhelp[0m" to view Commands    │  Join Telegram: [38;2;110;170;255mt.me/ethoneservices[0m  │  Visit: [38;2;110;170;255mhttps://ethone.net/[0m
+════════════════════════════════════╧══════════════════════════════════════╧══════════════════════════════
