@@ -928,15 +928,21 @@ function setTab(t){
 document.querySelectorAll('#seg button').forEach(b=>b.onclick=()=>{touched=true;setTab(b.dataset.t)});
 document.querySelectorAll('#steps button').forEach(b=>b.onclick=()=>go(+b.dataset.s));
 $('psearch').addEventListener('input',renderGrid);
+/* Presets in this folder. Anything listed here always loads; other .tfx files are also auto-found on GitHub. */
+const PRESET_FILES=['methods.tfx'];
+const GH_REPO='';/* only needed on a custom domain, e.g. 'yourname/yourrepo' */
 async function findPresets(){
   const out=new Set(),base=new URL('./',location.href);
   const add=u=>{try{const x=new URL(u,base);if(x.origin===location.origin&&/\.tfx$/i.test(x.pathname))out.add(x.href)}catch(e){}};
+  PRESET_FILES.forEach(f=>out.add(new URL(f,base).href));
   try{const r=await fetch(new URL('presets.json',base),{cache:'no-cache'});if(r.ok){const j=await r.json();(Array.isArray(j)?j:j.presets||[]).forEach(v=>add(typeof v==='string'?v:v&&v.file))}}catch(e){}
   try{const r=await fetch(base,{cache:'no-cache'});if(r.ok){const d=new DOMParser().parseFromString(await r.text(),'text/html');d.querySelectorAll('a[href]').forEach(a=>add(a.getAttribute('href')))}}catch(e){}
-  if(/\.github\.io$/.test(location.hostname)){
-    try{const o=location.hostname.split('.')[0],sg=location.pathname.split('/').filter(Boolean);if(sg.length&&sg[sg.length-1].indexOf('.')>-1)sg.pop();
-      const repo=sg.length?sg[0]:o+'.github.io',dir=sg.slice(1).join('/');
-      const r=await fetch('https://api.github.com/repos/'+o+'/'+repo+'/contents/'+dir);
+  if(GH_REPO||/\.github\.io$/.test(location.hostname)){
+    try{const sg=location.pathname.split('/').filter(Boolean);if(sg.length&&sg[sg.length-1].indexOf('.')>-1)sg.pop();
+      let o,repo,dir;
+      if(GH_REPO){[o,repo]=GH_REPO.split('/');dir=sg.join('/')}
+      else{o=location.hostname.split('.')[0];repo=sg.length?sg[0]:o+'.github.io';dir=sg.slice(1).join('/')}
+      const r=await fetch('https://api.github.com/repos/'+o+'/'+repo+'/contents'+(dir?'/'+dir:''));
       if(r.ok)(await r.json()).forEach(it=>/\.tfx$/i.test(it.name)&&add(it.name))}catch(e){}}
   return[...out];
 }
@@ -944,7 +950,7 @@ async function loadPresets(){
   $('pgrid').innerHTML='<div class="sk"></div><div class="sk"></div>';
   if(location.protocol==='file:'){$('pgrid').innerHTML='';$('pstat').textContent='Presets load when this page is opened from a web server (not as a local file).';return}
   const urls=await findPresets();
-  await Promise.all(urls.map(async u=>{try{const r=await fetch(u);if(r.ok)addPreset(nice(u),await r.text())}catch(e){}}));
+  await Promise.all(urls.map(async u=>{try{const r=await fetch(u);if(r.ok){const tx=await r.text();if(!/^\s*<(!doctype|html)/i.test(tx))addPreset(nice(u),tx)}}catch(e){}}));
   renderGrid();
   if(!PRE.length){$('pstat').textContent='No presets available yet.';return}
   if(!touched&&step===1)setTab('presets');
