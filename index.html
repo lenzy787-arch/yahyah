@@ -183,7 +183,8 @@ details.own{margin-top:12px;font-size:12px;color:var(--mu)}details.own summary{c
    <a class="btn" href="https://t.me/lenzyspeople" target="_blank" rel="noopener" style="margin-top:16px">Join t.me/lenzyspeople</a>
    <a class="btn sec" href="https://t.me/lenziii" target="_blank" rel="noopener">t.me/lenziii</a></section>
   <section id="s3" class="hid">
-   <h2>Gradient</h2><p class="sub">Pick a start and end color, then export .tfx.</p>
+   <h2>Style &amp; Export</h2><p class="sub" id="styleSub">Pick a start and end color, then export .tfx.</p>
+   <div id="gradControls">
    <div class="imgOnly hid"><h3>IMAGE COLORS</h3>
    <div class="chk"><input type="checkbox" id="origCol2" checked> Keep original colors</div>
    <label><span class="row"><span>Brighten dark colors</span><span id="boostV2">0</span></span></label>
@@ -200,6 +201,7 @@ details.own{margin-top:12px;font-size:12px;color:var(--mu)}details.own summary{c
    <select id="gdir"><option value="h">Left → Right</option><option value="v">Top → Bottom</option><option value="d">Diagonal ↘</option><option value="a">Diagonal ↙</option></select>
    <div class="chk"><input type="checkbox" id="gblank" checked> Color blank cells too</div>
    <label>Fade</label><div id="gbar" style="height:14px;border-radius:7px"></div>
+   </div>
    <h3 style="margin-top:16px">Reduce terminal size</h3>
    <p class="sub">This will be how it will actually look at the end.</p>
    <label><span class="row"><span>Columns</span><span id="termColsV">80</span></span></label>
@@ -575,7 +577,7 @@ function tfx(){
 }
 function grad(){
   if(step!==3)return;
-  $('origNote').classList.toggle('hid',!origOn());
+  const go2=origOn();$('gradControls').classList.toggle('hid',go2);$('styleSub').textContent=go2?'This preset keeps its own colors — no gradient needed.':'Pick a start and end color, then export .tfx.';
   $('gbar').style.background='linear-gradient(90deg,'+$('c1').value+','+$('c2').value+')';
   buildBaseGrid();
   const fullH=Math.max(1,grid.length),fullW=Math.max(1,...grid.map(r=>r.length||0));
