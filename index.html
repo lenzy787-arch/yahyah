@@ -124,6 +124,7 @@ main{position:relative;padding-top:70px}
 details.own{margin-top:12px;font-size:12px;color:var(--mu)}details.own summary{cursor:pointer}details.own code{background:#15151a;padding:1px 5px;border-radius:4px;color:#cfd3ff}
 #pstage{width:100%;display:flex;justify-content:center;margin:auto}
 #pFrame{background:#0c0c0c;border-radius:12px;overflow:hidden;box-shadow:0 25px 70px #000c,0 0 0 1px #2a2a2a;width:min(100%,960px)}
+#gp{touch-action:none}
 #pp{display:block;width:100%;height:auto}
 #pEmpty{padding:90px 24px;text-align:center;color:var(--mu);line-height:1.7;font-size:14px}
 .drop{outline:2px dashed var(--ac);outline-offset:-10px}
@@ -205,11 +206,13 @@ details.own{margin-top:12px;font-size:12px;color:var(--mu)}details.own summary{c
    <input type="range" id="termCols" min="40" max="200" value="80">
    <label><span class="row"><span>Rows</span><span id="termRowsV">26</span></span></label>
    <input type="range" id="termRows" min="10" max="60" value="26">
-   <button class="btn sec" id="editBtn" type="button" style="width:100%;margin-top:14px">✎ Edit freely</button>
+   <button class="btn sec" id="editBtn" type="button" style="width:100%;margin-top:14px">✎ Edit &amp; select</button>
    <div id="editPanel" class="hid" style="margin-top:10px;padding:12px;background:#0d0d10;border-radius:10px;border:1px solid var(--bd)">
     <div class="chk"><input type="checkbox" id="editGrad" checked> Gradient new text</div>
-    <label>Fixed color for new text</label>
+    <label>Color for selection &amp; new text</label>
     <div class="row"><input type="color" id="editCol" class="cp" value="#ffffff"><input type="text" id="editHex" value="#ffffff" maxlength="7"></div>
+    <div class="row" style="margin-top:8px"><button class="btn sec" id="selApply" type="button">Color selected</button><button class="btn sec" id="selReset" type="button">Reset color</button></div>
+    <div class="row" style="margin-top:6px"><button class="btn sec" id="selAll" type="button">Select all</button><button class="btn sec" id="selClear" type="button">Clear chars</button></div>
     <label style="margin-top:10px">Border preset</label>
     <select id="borderPre">
      <option value="">None</option>
@@ -224,7 +227,7 @@ details.own{margin-top:12px;font-size:12px;color:var(--mu)}details.own summary{c
     <input type="text" id="copyName" value="Ethone" placeholder="Your name">
     <button class="btn sec" id="applyBorder" type="button" style="width:100%;margin-top:6px">Apply border</button>
     <button class="btn sec" id="clearEdits" type="button" style="width:100%;margin-top:8px">Reset to original</button>
-    <p style="font-size:11px;color:var(--mu);margin:8px 0 0">Click anywhere to place cursor. Type, space, backspace, delete, arrows, paste. Border updates with color changes.</p>
+    <p style="font-size:11px;color:var(--mu);margin:8px 0 0">Drag on the art to select characters, then pick a color and it applies instantly. Click to place the cursor and type. Shift+arrows extend the selection, Delete clears it, Esc deselects.</p>
    </div>
   </section>
   <section id="s2" class="hid">
@@ -292,7 +295,7 @@ details.own{margin-top:12px;font-size:12px;color:var(--mu)}details.own summary{c
 (function(){
 const $=id=>document.getElementById(id);
 const cv=$('v1'),cx=cv.getContext('2d',{willReadFrequently:true});
-let step=1,text='';const S={W:640,H:240,tx:320,ty:120};let bb={lf:1,rt:1,asc:1,ds:1},vs=1,drag=null;let uploadedImg=null;let editMode=false;let grid=[];let cursor={x:0,y:0};let baseGrid=[];let tab='text',cur=null,lastCur=null,touched=false;const PRE=[];const isImg=()=>tab==='image'&&!!uploadedImg;let colorGrid=[],ox=0,oy=0,lastText=null,uploadedName='';
+let step=1,text='';const S={W:640,H:240,tx:320,ty:120};let bb={lf:1,rt:1,asc:1,ds:1},vs=1,drag=null;let uploadedImg=null;let editMode=false;let grid=[];let cursor={x:0,y:0};let baseGrid=[];let tab='text',cur=null,lastCur=null,touched=false;const PRE=[];const isImg=()=>tab==='image'&&!!uploadedImg;let ovr=new Map(),sel=null,selDrag=null,gP=1,gMg=8;let colorGrid=[],ox=0,oy=0,lastText=null,uploadedName='';
 /* ---------- Step 1: text image ---------- */
 async function draw(){
   const W=S.W,H=S.H;cv.width=W;cv.height=H;
@@ -503,7 +506,13 @@ function adj(c){const b=+$('boost').value/100;if(!b)return c;const m=Math.max(c[
 const rgb=c=>'rgb('+c.map(v=>Math.round(v)).join(',')+')';
 function origAt(x,y){const r=colorGrid[y];return(r&&r[x])||null}
 function isEditAt(x,y,ch){const r=baseGrid[y-oy],b=r&&r[x-ox];return b===undefined||b!==ch}
+function bump(dx,dy){ox+=dx;oy+=dy;
+  if(ovr.size){const n=new Map();ovr.forEach((v,k)=>{const a=k.split(',');n.set((+a[0]+dx)+','+(+a[1]+dy),v)});ovr=n}
+  if(sel){sel.x0+=dx;sel.x1+=dx;sel.y0+=dy;sel.y1+=dy}}
+function selBox(){return sel&&{x0:Math.min(sel.x0,sel.x1),x1:Math.max(sel.x0,sel.x1),y0:Math.min(sel.y0,sel.y1),y1:Math.max(sel.y0,sel.y1)}}
+function eachSel(fn){const b=selBox();if(!b)return;for(let y=b.y0;y<=b.y1;y++)for(let x=b.x0;x<=b.x1;x++)fn(x,y)}
 function colorFor(x,y,ch,mx,my){
+  const ov=ovr.get(x+','+y);if(ov)return ov;
   const ed=isEditAt(x,y,ch);
   if(!ed&&origOn()){const c=origAt(x-ox,y-oy);if(c)return adj(c).map(Math.round)}
   if(ed&&!$('editGrad').checked)return h2r($('editCol').value);
@@ -524,7 +533,7 @@ function coloredHTML(lines){
   });
   return h.slice(0,-1);
 }
-function resetEdits(){grid=[];baseGrid=[];ox=0;oy=0;cursor={x:0,y:0}}
+function resetEdits(){ovr=new Map();sel=null;grid=[];baseGrid=[];ox=0;oy=0;cursor={x:0,y:0}}
 function updImgUI(){const v=isImg()||(tab==='presets'&&!!cur);document.querySelectorAll('.imgOnly').forEach(e=>e.classList.toggle('hid',!v))}
 function buildBaseGrid(){
   const L=text.split('\n').map(l=>[...l]);
@@ -533,18 +542,18 @@ function buildBaseGrid(){
   if(!grid.length)grid=baseGrid.map(r=>r.slice());
 }
 function ensureGrid(x,y){
-  while(y<0){grid.unshift(Array(Math.max(1,...grid.map(r=>r.length||1))).fill(' '));y++;cursor.y++;oy++;}
-  while(x<0){for(let r of grid)r.unshift(' ');x++;cursor.x++;ox++;}
+  while(y<0){grid.unshift(Array(Math.max(1,...grid.map(r=>r.length||1))).fill(' '));y++;cursor.y++;bump(0,1);}
+  while(x<0){for(let r of grid)r.unshift(' ');x++;cursor.x++;bump(1,0);}
   while(grid.length<=y)grid.push([]);
   const w=Math.max(x+1,...grid.map(r=>r.length||0));
   for(let r of grid)while(r.length<w)r.push(' ');
 }
 function insertRowTop(){
   const w=Math.max(1,...grid.map(r=>r.length||1));
-  grid.unshift(Array(w).fill(' '));oy++;
+  grid.unshift(Array(w).fill(' '));bump(0,1);
 }
 function insertColLeft(){
-  for(let r of grid)r.unshift(' ');ox++;
+  for(let r of grid)r.unshift(' ');bump(1,0);
 }
 function tfx(){
   buildBaseGrid();
@@ -577,7 +586,7 @@ function grad(){
   frame.style.width=Math.min(termC*charW+28,document.querySelector('main').clientWidth-40)+'px';
   frame.style.height=(termR*charH+40)+'px';
   const P=Math.max(1,Math.min(5,(frame.clientWidth-20)/(fullW*2.2)));
-  const mg=8;
+  const mg=8;gP=P;gMg=mg;
   const pc=$('gp'),pg=pc.getContext('2d');
   pc.width=Math.ceil(fullW*2*P+mg*2);pc.height=Math.ceil(fullH*4*P+mg*2);
   pc.style.width='100%';pc.style.height='calc(100% - 32px)';pc.style.objectFit='contain';
@@ -597,6 +606,8 @@ function grad(){
       pg.fillText(ch,mg+(x*2+1)*P,mg+(y*4+2)*P);
     }
   }
+  if(sel&&editMode){const b=selBox(),X=mg+b.x0*2*P,Y=mg+b.y0*4*P,Wd=(b.x1-b.x0+1)*2*P,Hd=(b.y1-b.y0+1)*4*P;
+    pg.fillStyle='rgba(80,130,255,.35)';pg.fillRect(X,Y,Wd,Hd);pg.strokeStyle='#8fb0ff';pg.lineWidth=1;pg.strokeRect(X+.5,Y+.5,Wd-1,Hd-1)}
   // Cursor
   if(editMode){
     pg.strokeStyle='#fff';pg.lineWidth=1.5;
@@ -622,7 +633,7 @@ $('swap').onclick=()=>{const a=$('c1').value,b=$('c2').value;$('c1').value=$('h1
 $('editBtn').onclick=()=>{
   editMode=!editMode;
   $('editPanel').classList.toggle('hid',!editMode);
-  $('editBtn').textContent=editMode?'✎ Editing… (click to type)':'✎ Edit freely';
+  $('editBtn').textContent=editMode?'✎ Editing… (drag to select)':'✎ Edit & select';
   $('gp').style.cursor=editMode?'text':'default';
   if(editMode)buildBaseGrid();
   grad();
@@ -715,7 +726,7 @@ function applyBorderPreset(){
   }
   newGrid.push([b.bl,...Array(cw).fill(b.h),b.br]);
   grid=newGrid;
-  baseGrid=L.map(r=>{while(r.length<w)r.push(' ');return r});ox++;oy++;
+  baseGrid=L.map(r=>{while(r.length<w)r.push(' ');return r});bump(1,1);
   cursor={x:1,y:1};
   if(step!==3)go(3);
   grad();
@@ -728,29 +739,46 @@ $('borderPre').onchange=()=>{if($('borderPre').value)applyBorderPreset()};
   const el=$(id);
   if(el)el.addEventListener('input',()=>{if(step===3)grad()});
 });
-$('gp').addEventListener('click',e=>{
-  if(!editMode||step!==3)return;
-  const rect=$('gp').getBoundingClientRect();
-  buildBaseGrid();
-  const fullH=Math.max(1,grid.length),fullW=Math.max(1,...grid.map(r=>r.length||0));
-  const mn=document.querySelector('main');
-  const P=Math.max(1.1,Math.min(4.8,(mn.clientWidth-120)/(fullW*2)));
-  const mg=P*8;
-  const scaleX=$('gp').width/rect.width,scaleY=$('gp').height/rect.height;
-  const cx=(e.clientX-rect.left)*scaleX,cy=(e.clientY-rect.top)*scaleY;
-  let nx=Math.round((cx-mg)/(2*P)-0.5);
-  let ny=Math.round((cy-mg)/(4*P)-0.5);
-  if(ny<0){for(let i=0;i<-ny;i++)insertRowTop();ny=0;}
-  if(nx<0){for(let i=0;i<-nx;i++)insertColLeft();nx=0;}
-  cursor.x=nx;cursor.y=ny;
-  ensureGrid(cursor.x,cursor.y);
-  grad();
+function cellAt(e){
+  const cv=$('gp'),r=cv.getBoundingClientRect(),k=Math.min(r.width/cv.width,r.height/cv.height);
+  const px=(e.clientX-r.left-(r.width-cv.width*k)/2)/k,py=(e.clientY-r.top-(r.height-cv.height*k)/2)/k;
+  return{x:Math.max(0,Math.floor((px-gMg)/(2*gP))),y:Math.max(0,Math.floor((py-gMg)/(4*gP)))};
+}
+const gDims=()=>({W:Math.max(1,...grid.map(r=>r.length||0)),H:Math.max(1,grid.length)});
+function selAll(){const d=gDims();sel={x0:0,y0:0,x1:d.W-1,y1:d.H-1};grad()}
+function colorSel(c){eachSel((x,y)=>ovr.set(x+','+y,c));grad()}
+function clearSel(){const b=selBox();if(!b)return;ensureGrid(b.x1,b.y1);eachSel((x,y)=>{grid[y][x]=' '});grad()}
+$('gp').addEventListener('pointerdown',e=>{
+  if(!editMode||step!==3)return;e.preventDefault();
+  const c=cellAt(e);selDrag=c;sel={x0:c.x,y0:c.y,x1:c.x,y1:c.y};$('gp').setPointerCapture(e.pointerId);grad();
 });
+$('gp').addEventListener('pointermove',e=>{
+  if(!selDrag)return;const c=cellAt(e),d=gDims();
+  sel.x1=Math.min(c.x,d.W-1);sel.y1=Math.min(c.y,d.H-1);grad();
+});
+['pointerup','pointercancel'].forEach(ev=>$('gp').addEventListener(ev,()=>{
+  if(!selDrag)return;
+  if(sel&&sel.x0===sel.x1&&sel.y0===sel.y1){cursor={x:selDrag.x,y:selDrag.y};ensureGrid(cursor.x,cursor.y);sel=null}
+  selDrag=null;grad();
+}));
+$('selApply').onclick=()=>{if(sel)colorSel(h2r($('editCol').value));else toast('Drag on the art to select characters first')};
+$('selReset').onclick=()=>{if(sel){eachSel((x,y)=>ovr.delete(x+','+y));grad()}else toast('Select characters first')};
+$('selAll').onclick=selAll;
+$('selClear').onclick=()=>{if(sel)clearSel();else toast('Select characters first')};
+['editCol','editHex'].forEach(id=>$(id).addEventListener('input',()=>{if(sel&&okHex($('editHex').value))colorSel(h2r($('editCol').value))}));
 document.addEventListener('keydown',e=>{
   if(!editMode||step!==3)return;
   if(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA'||e.target.tagName==='SELECT')return;
   const k=e.key;
   ensureGrid(cursor.x,cursor.y);
+  if(k==='Escape'){sel=null;grad();return}
+  if((e.ctrlKey||e.metaKey)&&k.toLowerCase()==='a'){selAll();e.preventDefault();return}
+  if(sel&&(k==='Delete'||k==='Backspace')){clearSel();e.preventDefault();return}
+  if(e.shiftKey&&k.indexOf('Arrow')===0){
+    if(!sel)sel={x0:cursor.x,y0:cursor.y,x1:cursor.x,y1:cursor.y};
+    const dd={ArrowLeft:[-1,0],ArrowRight:[1,0],ArrowUp:[0,-1],ArrowDown:[0,1]}[k],d=gDims();
+    sel.x1=Math.max(0,Math.min(d.W-1,sel.x1+dd[0]));sel.y1=Math.max(0,Math.min(d.H-1,sel.y1+dd[1]));grad();e.preventDefault();return}
+  if(sel&&(k.indexOf('Arrow')===0||(k.length===1&&!e.ctrlKey&&!e.metaKey))){const b=selBox();if(k.length===1)cursor={x:b.x0,y:b.y0};sel=null}
   if(k==='ArrowLeft'){
     if(cursor.x===0)insertColLeft();
     else cursor.x--;
@@ -910,7 +938,7 @@ function paintBig(){
 }
 function usePreset(){
   if(tab==='presets'&&cur){text=cur.lines.join('\n');colorGrid=cur.colors;
-    if(lastCur!==cur||text!==lastText){lastCur=cur;lastText=text;resetEdits()}}
+    if(lastCur!==cur||text!==lastText){lastCur=cur;lastText=text;resetEdits();if(!editMode)$('editBtn').click()}}
 }
 function updNav(){
   $('cont').disabled=(tab==='presets'&&!cur&&step===1);
